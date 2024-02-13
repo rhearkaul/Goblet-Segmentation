@@ -1,134 +1,85 @@
-import sys
-import os
-import csv
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                             QPushButton, QListWidget, QLabel, QFileDialog, QGraphicsView, QGraphicsScene,
-                             QGraphicsPixmapItem, QGraphicsEllipseItem)
-from PyQt5.QtGui import QPixmap, QPainter, QPen
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QGroupBox, QVBoxLayout, QHBoxLayout,
+                             QPushButton, QSpinBox, QLabel, QTextEdit, QFileDialog, QWidget)
 
-class ImageViewer(QGraphicsView):
-    def __init__(self, imagePath):
+class MainWindow(QMainWindow):
+    def __init__(self):
         super().__init__()
-        self.imagePath = imagePath
-        self.marks = []
-        self.markListWidget = None
+        self.setWindowTitle('PyQt5 GUI')
+        self.setGeometry(100, 100, 640, 360)  # x, y, width, height
+
+        # Dictionary to store folder paths for each group box
+        self.folderPaths = {}
+
         self.initUI()
 
     def initUI(self):
-        self.scene = QGraphicsScene(self)
-        self.pixmapItem = QGraphicsPixmapItem(QPixmap(self.imagePath))
-        self.scene.addItem(self.pixmapItem)
-        self.setScene(self.scene)
+        widget = self.createCentralWidget()
+        self.setCentralWidget(widget)
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            position = self.mapToScene(event.pos())
-            self.addMark(position.x(), position.y())
+    def createCentralWidget(self):
+        mainLayout = QVBoxLayout()
 
-    def addMark(self, x, y):
-        mark = QGraphicsEllipseItem(x - 5, y - 5, 10, 10)
-        mark.setBrush(Qt.red)
-        self.scene.addItem(mark)
-        self.marks.append((x, y))
-        if self.markListWidget:
-            self.markListWidget.addItem(f"X: {x}, Y: {y}")
+        # Creating group boxes
+        groupBox1 = self.createGroupBox("WaterShed settings", True)
+        groupBox2 = self.createGroupBox("WaterShed settings", False)
+        groupBox3 = self.createGroupBox("Annotator settings", True)
+        groupBox4 = self.createGroupBox("Analyze settings", True)
 
-    def setMarkListWidget(self, markListWidget):
-        self.markListWidget = markListWidget
-
-class ImageSelector(QMainWindow):
-    def __init__(self, folderPath):
-        super().__init__()
-        self.folderPath = folderPath
-        self.initUI()
-
-    def initUI(self):
-        self.setWindowTitle('Image Selector')
-        self.layout = QVBoxLayout()
-
-        self.imageListWidget = QListWidget()
-        self.populateImageList()
-
-        openButton = QPushButton("Open")
-        openButton.clicked.connect(self.openImage)
-
-        self.layout.addWidget(self.imageListWidget)
-        self.layout.addWidget(openButton)
+        # Adding group boxes to the main layout
+        mainLayout.addWidget(groupBox1)
+        mainLayout.addWidget(groupBox2)
+        mainLayout.addWidget(groupBox3)
+        mainLayout.addWidget(groupBox4)
 
         centralWidget = QWidget()
-        centralWidget.setLayout(self.layout)
-        self.setCentralWidget(centralWidget)
+        centralWidget.setLayout(mainLayout)
+        return centralWidget
 
-    def populateImageList(self):
-        for filename in os.listdir(self.folderPath):
-            if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
-                self.imageListWidget.addItem(filename)
+    def createGroupBox(self, title, includeFolderSelect):
+        groupBox = QGroupBox(title)
+        layout = QVBoxLayout()
 
-    def openImage(self):
-        selectedItems = self.imageListWidget.selectedItems()
-        if selectedItems:
-            filename = selectedItems[0].text()
-            imagePath = os.path.join(self.folderPath, filename)
-            self.imageViewer = ImageViewerWindow(imagePath)
-            self.imageViewer.show()
+        # Parameters layout
+        for i in range(1, 4):
+            paramLayout = QHBoxLayout()
+            paramLayout.addWidget(QLabel(f"Parameter {i}:"))
+            paramLayout.addWidget(QSpinBox())
+            layout.addLayout(paramLayout)
 
-class ImageViewerWindow(QMainWindow):
-    def __init__(self, imagePath):
-        super().__init__()
-        self.imagePath = imagePath
-        self.marks = []
-        self.initUI()
+        # Folder select and path display
+        if includeFolderSelect:
+            folderSelectButton = QPushButton("Folder Select")
+            folderSelectButton.clicked.connect(lambda: self.selectFolder(groupBox))
 
-    def initUI(self):
-        self.setWindowTitle('Image Viewer')
-        self.viewer = ImageViewer(self.imagePath)
+            pathTextEdit = QTextEdit()
+            pathTextEdit.setFixedHeight(40)
+            layout.addWidget(folderSelectButton)
+            layout.addWidget(pathTextEdit)
 
-        self.layout = QVBoxLayout()
+        # Start button
+        startButton = QPushButton("Start" if title != "WaterShed settings" else "Start WaterShed")
+        layout.addWidget(startButton)
 
-        self.markListWidget = QListWidget()
-        self.viewer.setMarkListWidget(self.markListWidget)
+        groupBox.setLayout(layout)
+        return groupBox
 
-        deleteMarkButton = QPushButton("Delete Mark")
-        deleteMarkButton.clicked.connect(self.deleteMark)
+    def selectFolder(self, groupBox):
+        folderPath = QFileDialog.getExistingDirectory(self, "Select Folder")
+        if folderPath:  # Check if a folder was selected
+            # Find the QTextEdit in the group box to update the path
+            for child in groupBox.findChildren(QTextEdit):
+                child.setText(folderPath)
+                break
 
-        saveButton = QPushButton("Save")
-        saveButton.clicked.connect(self.saveMarks)
-
-        self.layout.addWidget(self.viewer)
-        self.layout.addWidget(self.markListWidget)
-        self.layout.addWidget(deleteMarkButton)
-        self.layout.addWidget(saveButton)
-
-        centralWidget = QWidget()
-        centralWidget.setLayout(self.layout)
-        self.setCentralWidget(centralWidget)
-        self.resize(self.viewer.pixmapItem.pixmap().width(), self.viewer.pixmapItem.pixmap().height())
-
-    def deleteMark(self):
-        selectedItems = self.markListWidget.selectedItems()
-        if selectedItems:
-            for item in selectedItems:
-                index = self.markListWidget.row(item)
-                del self.viewer.marks[index]
-                self.markListWidget.takeItem(index)
-
-    def saveMarks(self):
-        filePath, _ = QFileDialog.getSaveFileName(self, "Save File", "", "CSV files (*.csv)")
-        if filePath:
-            with open(filePath, 'w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(['X', 'Y'])
-                for mark in self.viewer.marks:
-                    writer.writerow(mark)
+            # Store the folder path in the dictionary using the group box as the key
+            self.folderPaths[groupBox] = folderPath
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    # Replace 'your/folder/path' with the actual folder path obtained from Group Box 3
-    folderPath = 'your/folder/path'
-    selector = ImageSelector(folderPath)
-    selector.show()
-    sys.exit(app.exec_())
+    app = QApplication([])
+    window = MainWindow()
+    window.show()
+    app.exec_()
+
 
 
 
