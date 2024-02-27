@@ -2,7 +2,7 @@ import os
 import csv
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QFileDialog, QListWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QMessageBox, QToolBar)
 from PyQt5.QtGui import QPixmap, QPainter, QPen, QBrush, QColor
-from PyQt5.QtCore import Qt, QRect
+from PyQt5.QtCore import Qt, QRect, QPoint
 
 
 class ImageWindow(QWidget):
@@ -72,6 +72,23 @@ class ImageWindow(QWidget):
         self.marks.append(position)
         self.update()
 
+    def clearMarksAndBoxes(self):
+        self.marks.clear()
+        self.boxes.clear()
+        MainWindow.instance().clearMarkList()
+        self.update()
+
+    def addMarkFromCSV(self, position):
+        self.marks.append(QPoint(*position))
+        MainWindow.instance().addMark(QPoint(*position))
+        self.update()
+
+    def addBoxFromCSV(self, box):
+        rect = QRect(QPoint(box[0], box[1]), QPoint(box[2], box[3]))
+        self.boxes.append(rect)
+        MainWindow.instance().addBox(rect)
+        self.update()
+
     def paintEvent(self, event):
         super().paintEvent(event)
         pixmap = self.originalPixmap.copy()
@@ -86,6 +103,8 @@ class ImageWindow(QWidget):
             painter.drawRect(QRect(self.tempBox[0], self.tempBox[1]))
         painter.end()
         self.imageLabel.setPixmap(pixmap)
+
+
 
 
 class MainWindow(QMainWindow):
@@ -103,6 +122,8 @@ class MainWindow(QMainWindow):
         self.imageWindow = None
 
         self.initUI()
+
+
 
     @staticmethod
     def instance():
@@ -133,6 +154,14 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
+        # Inside initUI method of MainWindow class
+        loadMarksBtn = QPushButton("Load")
+        loadMarksBtn.clicked.connect(self.loadMarks)
+        layout.addWidget(loadMarksBtn)
+
+    def clearMarkList(self):
+        self.markListWidget.clear()
+
     def selectFolder(self):
         folderPath = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folderPath:
@@ -151,25 +180,24 @@ class MainWindow(QMainWindow):
             imagePath = os.path.join(self.folderPath, selectedItems[0].text())
             self.imageWindow = ImageWindow(imagePath)
 
-    def addMark(self, position):
-        self.markListWidget.addItem(f"X: {position.x()}, Y: {position.y()}")
+    def addMark(self, position, index=None):
+        index = index if index is not None else self.markListWidget.count()
+        self.markListWidget.addItem(f"Point {index}: X: {position.x()}, Y: {position.y()}")
 
-    def addBox(self, box):
+    def addBox(self, box, index=None):
+        index = index if index is not None else self.markListWidget.count()
         self.markListWidget.addItem(
-            f"Box: {box.topLeft().x()}, {box.topLeft().y()} to {box.bottomRight().x()}, {box.bottomRight().y()}")
+            f"Box {index}: {box.topLeft().x()}, {box.topLeft().y()} to {box.bottomRight().x()}, {box.bottomRight().y()}")
 
     def deleteMark(self):
         selectedItems = self.markListWidget.selectedItems()
         if selectedItems and self.imageWindow:
             text = selectedItems[0].text()
-            if text.startswith("X:"):
-                # Deleting a point mark
-                index = self.markListWidget.row(selectedItems[0])
+            index = self.markListWidget.row(selectedItems[0])
+            if "Point" in text:
                 del self.imageWindow.marks[index]
-            elif text.startswith("Box:"):
-                # Deleting a box
-                index = self.markListWidget.row(selectedItems[0])
-                del self.imageWindow.boxes[index]
+            elif "Box" in text:
+                del self.imageWindow.boxes[index - len(self.imageWindow.marks)]
             self.markListWidget.takeItem(index)
             self.imageWindow.update()
 
@@ -188,6 +216,26 @@ class MainWindow(QMainWindow):
                 QMessageBox.information(self, "Save Marks", "Marks and boxes saved successfully.")
         else:
             QMessageBox.warning(self, "Save Marks", "No marks or boxes to save.")
+
+    def loadMarks(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Open File", "", "CSV files (*.csv)")
+        if filename:
+            with open(filename, 'r', newline='') as csvfile:
+                reader = csv.reader(csvfile)
+                next(reader, None)
+                marks = []
+                boxes = []
+                for row in reader:
+                    if row[0] == 'Point':
+                        marks.append((int(row[1]), int(row[2])))
+                    elif row[0] == 'Box':
+                        boxes.append((int(row[1]), int(row[2]), int(row[3]), int(row[4])))
+                self.imageWindow.clearMarksAndBoxes()
+                for mark in marks:
+                    self.imageWindow.addMarkFromCSV(mark)
+                for box in boxes:
+                    self.imageWindow.addBoxFromCSV(box)
+
 
 if __name__ == '__main__':
     app = QApplication([])
