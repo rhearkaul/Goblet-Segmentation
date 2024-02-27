@@ -1,23 +1,57 @@
 import os
 import csv
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QFileDialog, QListWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QMessageBox)
-from PyQt5.QtGui import QPixmap, QPainter, QPen
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QFileDialog, QListWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QMessageBox, QToolBar)
+from PyQt5.QtGui import QPixmap, QPainter, QPen, QBrush, QColor
+from PyQt5.QtCore import Qt, QRect
 
 class ImageWindow(QLabel):
     def __init__(self, imagePath):
         super().__init__()
         self.imagePath = imagePath
         self.marks = []
+        self.boxes = []
+        self.mode = 'Point'
+        self.tempBox = None
         self.setPixmap(QPixmap(imagePath))
         self.setWindowTitle("Image Viewer")
         self.setWindowFlags(Qt.WindowCloseButtonHint)
+        self.initToolbar()
         self.show()
+
+    def initToolbar(self):
+        self.toolbar = QToolBar("Mode Toolbar")
+        pointModeAction = self.toolbar.addAction("Point Mode")
+        boxModeAction = self.toolbar.addAction("Box Mode")
+        pointModeAction.triggered.connect(lambda: self.setMode('Point'))
+        boxModeAction.triggered.connect(lambda: self.setMode('Box'))
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.toolbar)
+        layout.addStretch()
+        self.setLayout(layout)
+
+    def setMode(self, mode):
+        self.mode = mode
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.mark(event.pos())
-            MainWindow.instance().addMark(event.pos())
+            if self.mode == 'Point':
+                self.mark(event.pos())
+                MainWindow.instance().addMark(event.pos())
+            elif self.mode == 'Box':
+                self.tempBox = [event.pos(), event.pos()]  # Starting point for the box.
+
+    def mouseMoveEvent(self, event):
+        if self.mode == 'Box' and self.tempBox:
+            self.tempBox[1] = event.pos()  # Update the second corner of the box.
+            self.update()  # Repaint
+
+    def mouseReleaseEvent(self, event):
+        if self.mode == 'Box' and self.tempBox:
+            self.boxes.append(QRect(self.tempBox[0], event.pos()))
+            self.tempBox = None
+            MainWindow.instance().addBox(self.boxes[-1])
+            self.update()  # repaint again
 
     def mark(self, position):
         self.marks.append(position)
@@ -27,8 +61,13 @@ class ImageWindow(QLabel):
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setPen(QPen(Qt.red, 10))
+        painter.setBrush(QBrush(QColor(255, 0, 0, 50)))
         for pos in self.marks:
             painter.drawPoint(pos)
+        for box in self.boxes:
+            painter.drawRect(box)
+        if self.tempBox:
+            painter.drawRect(QRect(self.tempBox[0], self.tempBox[1]))
 
 class MainWindow(QMainWindow):
     _instance = None
@@ -96,26 +135,40 @@ class MainWindow(QMainWindow):
     def addMark(self, position):
         self.markListWidget.addItem(f"X: {position.x()}, Y: {position.y()}")
 
+    def addBox(self, box):
+        self.markListWidget.addItem(
+            f"Box: {box.topLeft().x()}, {box.topLeft().y()} to {box.bottomRight().x()}, {box.bottomRight().y()}")
+
     def deleteMark(self):
         selectedItems = self.markListWidget.selectedItems()
         if selectedItems and self.imageWindow:
-            index = self.markListWidget.row(selectedItems[0])
-            del self.imageWindow.marks[index]
+            text = selectedItems[0].text()
+            if text.startswith("X:"):
+                # Deleting a point mark
+                index = self.markListWidget.row(selectedItems[0])
+                del self.imageWindow.marks[index]
+            elif text.startswith("Box:"):
+                # Deleting a box
+                index = self.markListWidget.row(selectedItems[0])
+                del self.imageWindow.boxes[index]
             self.markListWidget.takeItem(index)
             self.imageWindow.update()
 
     def saveMarks(self):
-        if self.imageWindow and self.imageWindow.marks:
+        if self.imageWindow and (self.imageWindow.marks or self.imageWindow.boxes):
             filename, _ = QFileDialog.getSaveFileName(self, "Save File", "", "CSV files (*.csv)")
             if filename:
                 with open(filename, 'w', newline='') as csvfile:
                     writer = csv.writer(csvfile)
-                    writer.writerow(['X', 'Y'])
+                    writer.writerow(['Type', 'X1', 'Y1', 'X2', 'Y2'])
                     for mark in self.imageWindow.marks:
-                        writer.writerow([mark.x(), mark.y()])
-                QMessageBox.information(self, "Save Marks", "Marks saved successfully.")
+                        writer.writerow(['Point', mark.x(), mark.y(), '', ''])
+                    for box in self.imageWindow.boxes:
+                        writer.writerow(
+                            ['Box', box.topLeft().x(), box.topLeft().y(), box.bottomRight().x(), box.bottomRight().y()])
+                QMessageBox.information(self, "Save Marks", "Marks and boxes saved successfully.")
         else:
-            QMessageBox.warning(self, "Save Marks", "No marks to save.")
+            QMessageBox.warning(self, "Save Marks", "No marks or boxes to save.")
 
 if __name__ == '__main__':
     app = QApplication([])
