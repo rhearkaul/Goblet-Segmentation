@@ -204,16 +204,22 @@ class MainWindow(QMainWindow):
     def saveMarks(self):
         if self.imageWindow and (self.imageWindow.marks or self.imageWindow.boxes):
             filename, _ = QFileDialog.getSaveFileName(self, "Save File", "", "CSV files (*.csv)")
+            imageFilename = filename.replace('.csv', '.jpg')  # Save the image with the same base name
             if filename:
                 with open(filename, 'w', newline='') as csvfile:
                     writer = csv.writer(csvfile)
-                    writer.writerow(['Type', 'X1', 'Y1', 'X2', 'Y2'])
+                    writer.writerow(['Type', 'X1', 'Y1', 'X2', 'Y2', 'X3', 'Y3', 'X4', 'Y4'])  # Updated header
                     for mark in self.imageWindow.marks:
-                        writer.writerow(['Point', mark.x(), mark.y(), '', ''])
+                        writer.writerow(['Point', mark.x(), mark.y(), '', '', '', '', '', ''])
                     for box in self.imageWindow.boxes:
+                        # Save all four corners
                         writer.writerow(
-                            ['Box', box.topLeft().x(), box.topLeft().y(), box.bottomRight().x(), box.bottomRight().y()])
-                QMessageBox.information(self, "Save Marks", "Marks and boxes saved successfully.")
+                            ['Box', box.topLeft().x(), box.topLeft().y(), box.topRight().x(), box.topRight().y(),
+                             box.bottomRight().x(), box.bottomRight().y(), box.bottomLeft().x(), box.bottomLeft().y()])
+                QMessageBox.information(self, "Save Marks", "Marks, boxes, and image saved successfully.")
+
+                # Save the current image
+                self.imageWindow.originalPixmap.save(imageFilename)
         else:
             QMessageBox.warning(self, "Save Marks", "No marks or boxes to save.")
 
