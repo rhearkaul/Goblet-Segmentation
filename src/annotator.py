@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QFileDialog
 from PyQt5.QtGui import QPixmap, QPainter, QPen, QBrush, QColor
 from PyQt5.QtCore import Qt, QRect
 
-class ImageWindow(QLabel):
+
+class ImageWindow(QWidget):
     def __init__(self, imagePath):
         super().__init__()
         self.imagePath = imagePath
@@ -12,46 +13,60 @@ class ImageWindow(QLabel):
         self.boxes = []
         self.mode = 'Point'
         self.tempBox = None
-        self.setPixmap(QPixmap(imagePath))
+
+        self.imageLabel = QLabel()
+        self.originalPixmap = QPixmap(imagePath)
+        self.imageLabel.setPixmap(self.originalPixmap)
+
         self.setWindowTitle("Image Viewer")
         self.setWindowFlags(Qt.WindowCloseButtonHint)
-        self.initToolbar()
+
+        self.initUI()
         self.show()
 
+    def initUI(self):
+        layout = QVBoxLayout()
+        self.toolbar = self.initToolbar()
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.imageLabel)
+
+        self.setLayout(layout)
+
     def initToolbar(self):
-        self.toolbar = QToolBar("Mode Toolbar")
-        pointModeAction = self.toolbar.addAction("Point Mode")
-        boxModeAction = self.toolbar.addAction("Box Mode")
+        toolbar = QToolBar("Mode Toolbar")
+        pointModeAction = toolbar.addAction("Point Mode")
+        boxModeAction = toolbar.addAction("Box Mode")
         pointModeAction.triggered.connect(lambda: self.setMode('Point'))
         boxModeAction.triggered.connect(lambda: self.setMode('Box'))
-
-        layout = QVBoxLayout()
-        layout.addWidget(self.toolbar)
-        layout.addStretch()
-        self.setLayout(layout)
+        return toolbar
 
     def setMode(self, mode):
         self.mode = mode
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
+            pos = self.imageLabel.mapFromParent(event.pos())
             if self.mode == 'Point':
-                self.mark(event.pos())
-                MainWindow.instance().addMark(event.pos())
-            elif self.mode == 'Box':
-                self.tempBox = [event.pos(), event.pos()]  # Starting point for the box.
+                self.mark(pos)
+                MainWindow.instance().addMark(pos)
+            elif self.mode == 'Box' and self.imageLabel.rect().contains(pos):
+                self.tempBox = [pos, pos]
 
     def mouseMoveEvent(self, event):
         if self.mode == 'Box' and self.tempBox:
-            self.tempBox[1] = event.pos()  # Update the second corner of the box.
-            self.update()  # Repaint
+            pos = self.imageLabel.mapFromParent(event.pos())
+            if self.imageLabel.rect().contains(pos):
+                self.tempBox[1] = pos
+                self.update()
 
     def mouseReleaseEvent(self, event):
         if self.mode == 'Box' and self.tempBox:
-            self.boxes.append(QRect(self.tempBox[0], event.pos()))
-            self.tempBox = None
-            MainWindow.instance().addBox(self.boxes[-1])
-            self.update()  # repaint again
+            pos = self.imageLabel.mapFromParent(event.pos())
+            if self.imageLabel.rect().contains(pos):
+                self.boxes.append(QRect(self.tempBox[0], pos))
+                MainWindow.instance().addBox(self.boxes[-1])
+                self.tempBox = None
+                self.update()
 
     def mark(self, position):
         self.marks.append(position)
@@ -59,7 +74,8 @@ class ImageWindow(QLabel):
 
     def paintEvent(self, event):
         super().paintEvent(event)
-        painter = QPainter(self)
+        pixmap = self.originalPixmap.copy()
+        painter = QPainter(pixmap)
         painter.setPen(QPen(Qt.red, 10))
         painter.setBrush(QBrush(QColor(255, 0, 0, 50)))
         for pos in self.marks:
@@ -68,6 +84,9 @@ class ImageWindow(QLabel):
             painter.drawRect(box)
         if self.tempBox:
             painter.drawRect(QRect(self.tempBox[0], self.tempBox[1]))
+        painter.end()
+        self.imageLabel.setPixmap(pixmap)
+
 
 class MainWindow(QMainWindow):
     _instance = None
