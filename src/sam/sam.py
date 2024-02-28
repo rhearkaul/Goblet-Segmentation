@@ -46,7 +46,7 @@ class SAModel:
 
         if selected_model in os.listdir():
             logging.info(f"'{model_type.value}' weights exists, proceeding...")
-            return
+            return selected_model
 
         logging.info(f"Getting '{model_type.value}' weights...")
 
@@ -60,12 +60,24 @@ class SAModel:
         else:
             raise RuntimeError("Unable to obtain weights.")
 
+    def load_base_weights(self, model_type: SAModelType = SAModelType.SAM_VIT_L):
+        try:
+            path_to_weights = self._download_weights(model_type)
+        except RuntimeError:
+            path_to_weights = None
+            logging.error("Unable to obtain weights, empty model will be loaded.")
+        else:
+            sam = build_sam_vit_l(path_to_weights)
+
+        return sam
+
     def load_weights(
         self,
-        path_to_weights: Path | str,
         model_type: SAModelType,
+        path_to_weights: Path | str = None,
     ):
-        """Loads the weights for the selected model.
+        """Loads the weights for the selected model. If there are issues
+        loading the weights, the `vit_l` base model will be loaded instead.
 
         Parameters:
         -----------
@@ -76,22 +88,16 @@ class SAModel:
             Specifies the model to be used.
         """
         try:
-            sam = sam_model_registry[model_type.value](path_to_weights)
-            logging.info("Weights loaded sucessfully!")
-
-        except (RuntimeError, FileNotFoundError) as error:
-            logging.error(f"Something went wrong, loading 'vit_l' instead: {error}")
-
-            try:
-                default_model = SAModelType.SAM_VIT_L
-                path_to_weights = self._download_weights(default_model)
-            except RuntimeError:
-                path_to_weights = None
-                logging.error("Unable to obtain weights, empty model will be loaded!")
+            if not path_to_weights:
+                logging.info("Paths to weights not set, default will be loaded")
+                sam = self.load_base_weights()
             else:
-                sam = build_sam_vit_l(path_to_weights)
-
-            print("here")
+                sam = sam_model_registry[model_type.value](path_to_weights)
+        except (RuntimeError, FileNotFoundError) as error:
+            logging.error(f"Something went wrong, loading base instead: {error}")
+            sam = self.load_base_weights()
+        else:
+            logging.info("Weights loaded sucessfully!")
         finally:
             sam.to("cuda" if self._cuda_available else "cpu")
             self.model = SamPredictor(sam)
