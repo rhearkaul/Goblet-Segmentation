@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import requests
 import torch
-from segment_anything import SamPredictor, build_sam, sam_model_registry
+from segment_anything import SamPredictor, build_sam_vit_l, sam_model_registry
 
 
 class SAModelType(Enum):
@@ -79,7 +79,7 @@ class SAModel:
             sam = sam_model_registry[model_type.value](path_to_weights)
             logging.info("Weights loaded sucessfully!")
 
-        except RuntimeError | FileNotFoundError as error:
+        except (RuntimeError, FileNotFoundError) as error:
             logging.error(f"Something went wrong, loading 'vit_l' instead: {error}")
 
             try:
@@ -89,9 +89,10 @@ class SAModel:
                 path_to_weights = None
                 logging.error("Unable to obtain weights, empty model will be loaded!")
             else:
-                sam = build_sam(path_to_weights)
+                sam = build_sam_vit_l(path_to_weights)
 
-        else:
+            print("here")
+        finally:
             sam.to("cuda" if self._cuda_available else "cpu")
             self.model = SamPredictor(sam)
             logging.error("SAM model generated, proceed with predictions")
