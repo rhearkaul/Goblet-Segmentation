@@ -97,7 +97,7 @@ class SAModel:
             logging.error("SAM model generated, proceed with predictions")
 
     def set_image(self, image):
-        """Sets the image to the model.
+        """Sets the image to the model. Does nothing if model is not loaded.
 
         Parameters:
         -----------
@@ -105,8 +105,10 @@ class SAModel:
             containing pixel values of type uint8. Note, the image will be casted
             to the appropriate type if not already.
         """
-        image = np.asarray(image, dtype=np.uint8)
-        self.model.set_image(image)
+
+        if self.model:
+            image = np.asarray(image, dtype=np.uint8)
+            self.model.set_image(image)
 
     def predict(self, points: list, labels: list = None, bboxes: list = None):
         """Perform prediction on the image.
