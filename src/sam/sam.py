@@ -134,8 +134,8 @@ class SAModel:
 
         Returns:
         -------
-            tuple:
-                containing the mask and the respective iou scores.
+        tuple:
+            containing the mask and the respective iou scores.
         """
         masks, scores, _ = self.model.predict_torch(
             point_coords=points,
