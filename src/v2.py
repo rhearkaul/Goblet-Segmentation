@@ -75,7 +75,7 @@ class ImageViewer(Frame):
         if self.annotation_mode == 'point':
             oval_id = self.canvas.create_oval(event.x - 2, event.y - 2, event.x + 2, event.y + 2, fill='red')
             self.points.append((event.x, event.y))
-            self.point_ids.append(oval_id)  # Store the canvas ID
+            self.point_ids.append(oval_id)
 
     def onStartBox(self, event):
         self.start_x = event.x
@@ -90,7 +90,7 @@ class ImageViewer(Frame):
     def onRelease(self, event):
         if self.annotation_mode == 'box' and self.start_x is not None and self.start_y is not None:
             self.boxes.append((self.start_x, self.start_y, event.x, event.y))
-            self.box_ids.append(self.rect)  # Store the canvas ID for the box
+            self.box_ids.append(self.rect)
             self.rect = None
             self.start_x = None
             self.start_y = None
@@ -121,17 +121,16 @@ class ImageViewer(Frame):
     def deleteSelected(self):
         selected = self.lb.curselection()
         for index in reversed(selected):
-            # Determine if it's a point or box based on list index and remove accordingly
             if index < len(self.points):
-                self.canvas.delete(self.point_ids[index])  # Delete from canvas
-                del self.points[index]  # Delete from points list
-                del self.point_ids[index]  # Delete the ID from the list
+                self.canvas.delete(self.point_ids[index])
+                del self.points[index]
+                del self.point_ids[index]
             else:
                 box_index = index - len(self.points)
-                self.canvas.delete(self.box_ids[box_index])  # Delete from canvas
-                del self.boxes[box_index]  # Delete from boxes list
-                del self.box_ids[box_index]  # Delete the ID from the list
-            self.lb.delete(index)  # Delete from listbox
+                self.canvas.delete(self.box_ids[box_index])
+                del self.boxes[box_index]
+                del self.box_ids[box_index]
+            self.lb.delete(index)
 
     def saveAnnotations(self):
         points_array = np.array(self.points)
