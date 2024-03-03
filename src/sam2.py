@@ -23,14 +23,19 @@ def loadAnnotations(filename='annotations.npz'):
     print("Loaded boxes:", input_boxes)
     return input_points, input_boxes
 
-
+def show_mask(mask, ax, random_color=False):
+    if random_color:
+        color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
+    else:
+        color = np.array([30 / 255, 144 / 255, 255 / 255, 0.6])
+    h, w = mask.shape[-2:]
+    mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
+    ax.imshow(mask_image)
 
 
 points, original_box = loadAnnotations(filename='annotations.npz')
 input_pts = points.tolist()
-box1_tensor = torch.tensor(original_box)
-points_tensor = torch.tensor(input_pts)
-input_pts_tensor = torch.tensor(input_pts, device='cuda').unsqueeze(1)
+
 
 
 image_path = "C:/Users/steve/Downloads/data/Data Aug (011924)/raw/test222.jpg"
@@ -52,25 +57,32 @@ from segment_anything import (
     build_sam
 )
 
-sam2 = build_sam_vit_h(path_to_weights)
-sam2.to(device='cuda')
-predictor = SamPredictor(sam2)
-
-# Set the image
-predictor.set_image(image)
+sam = SAModel()
+sam.load_weights(model_type=SAModelType.SAM_VIT_H, path_to_weights=path_to_weights) # use sam.load_weights() if you have downloaded weights
 
 
-input_pts_tensor = torch.tensor(input_pts, device=predictor.device).unsqueeze(1)
 
+input_pts_tensor = torch.tensor(input_pts, device=sam.model.device).unsqueeze(1)
 
-transformed_pts = predictor.transform.apply_coords_torch(
+transformed_pts=sam.model.transform.apply_coords_torch(
     input_pts_tensor, image.shape[:2]
 )
 
+input_lbls = [1 for _ in range(len(input_pts))]
 
-sam = SAModel()
-sam.load_weights(model_type=SAModelType.SAM_VIT_H, path_to_weights=path_to_weights) # use sam.load_weights() if you have downloaded weights
+input_lbls_tensor = torch.tensor(input_lbls, device=sam.model.device).unsqueeze(1)
+
 sam.set_image(image)
-masks, iou_scores = sam.predict(points=transformed_pts) # labels & bbox is optional
+masks, iou_scores = sam.predict(points=transformed_pts,labels=input_lbls_tensor) # labels & bbox is optional
+
+plt.figure(figsize=(10, 10))
+plt.imshow(image)
+for mask in masks:
+    show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
+    plt.axis('off')
+    plt.show()
+for ious in iou_scores:
+    print(ious)
+
 
 print("hold")
