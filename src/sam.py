@@ -24,6 +24,7 @@ def loadAnnotations(filename='annotations.npz'):
 
 points, original_box = loadAnnotations(filename='annotations.npz')
 original_box = original_box[0]
+box1_tensor = torch.tensor(original_box)
 
 image_path = "C:/Users/steve/Downloads/data/Data Aug (011924)/raw/test222.jpg"
 image = cv2.imread(image_path)
@@ -78,7 +79,9 @@ sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
 predictor = SamPredictor(sam)
 predictor.set_image(image)
 
-input_boxes = boxes1_tensor
+print(original_box)
+
+input_boxes = box1_tensor
 
 transformed_boxes = predictor.transform.apply_boxes_torch(input_boxes, image.shape[:2])
 masks, _, _ = predictor.predict_torch(
@@ -92,7 +95,5 @@ plt.figure(figsize=(10, 10))
 plt.imshow(image)
 for mask in masks:
     show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
-for box in input_boxes:
-    show_box(box.cpu().numpy(), plt.gca())
 plt.axis('off')
 plt.show()
