@@ -125,11 +125,12 @@ REGION_PROP_KEYS = (
 def generate_centroid(
     image,
     stain_vector,
-    solidity_thresh,
-    distance_thresh,
     equalization_bins,
     intensity_thresh,
     size_thresh,
+    max_aspect_ratio,
+    min_solidity,
+    distance_thresh,
 ):
     """Generates the centroid locations given an image.
 
@@ -159,7 +160,7 @@ def generate_centroid(
     props = regionprops_table(
         labels,
     )
-    filtered_props = _filter_img(labels, props, solidity_thresh)
+    filtered_props = _filter_img(labels, props, min_solidity, max_aspect_ratio)
 
     # Generated the filtered binary image
     bin_img = np.zeros_like(bin_img)
