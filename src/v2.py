@@ -50,11 +50,6 @@ class ImageViewer(Frame):
 
         menubar.add_cascade(label="Annotator", menu=annotatorMenu)
 
-        sliceMenu = Menu(menubar)
-        sliceMenu.add_command(label="Slice Area Select", command=self.setSliceMode)
-        sliceMenu.add_command(label="Confirm Slice", command=self.confirmSlice)
-        menubar.add_cascade(label="Slice", menu=sliceMenu)
-
         samMenu = Menu(menubar)
         samMenu.add_command(label="Run SAM", command=self.runSAM)
         menubar.add_cascade(label="SAM", menu=samMenu)
@@ -224,44 +219,9 @@ class ImageViewer(Frame):
         else:
             print("No image opened.")
 
-    def setSliceMode(self):
-        self.annotation_mode = 'slice'
-        self.canvas.bind("<Button-1>", self.onStartSlice)
-        self.canvas.bind("<B1-Motion>", self.onDragSlice)
-        self.canvas.bind("<ButtonRelease-1>", self.onReleaseSlice)
 
-    def onStartSlice(self, event):
-        self.start_x = event.x
-        self.start_y = event.y
 
-    def onDragSlice(self, event):
-        if self.slice_rect:
-            self.canvas.delete(self.slice_rect)
-        self.slice_rect = self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline='blue')
 
-    def onReleaseSlice(self, event):
-        self.slice_coords = (self.start_x, self.start_y, event.x, event.y)
-
-    def confirmSlice(self):
-        if self.slice_coords:
-            cropped_image = self.image.crop(self.slice_coords)
-
-            base, ext = os.path.splitext(self.image_path)
-            sliced_image_path = f"{base}_sliced{ext}"
-
-            cropped_image.save(sliced_image_path)
-
-            self.image_path = sliced_image_path
-            self.image = cropped_image
-
-            self.photo = ImageTk.PhotoImage(self.image)
-            self.canvas.create_image(0, 0, image=self.photo, anchor='nw')
-            self.canvas.config(scrollregion=self.canvas.bbox("all"))
-
-            if self.slice_rect:
-                self.canvas.delete(self.slice_rect)
-            self.slice_rect = None
-            self.slice_coords = None
 
 def main():
     root = Tk()
