@@ -6,6 +6,7 @@ from PIL import Image, ImageTk
 import numpy as np
 from tkinter import Button
 from sam2 import sam_main
+import src.watershed.watershed
 
 class ImageViewer(Frame):
     def __init__(self, parent):

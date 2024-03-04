@@ -63,7 +63,7 @@ def show_box(box, ax):
 
 plt.figure(figsize=(10, 10))
 plt.imshow(image)
-show_box(original_box, plt.gca())
+show_points(points, plt.gca())
 plt.axis('off')
 plt.show()
 
