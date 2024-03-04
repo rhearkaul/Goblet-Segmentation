@@ -65,34 +65,38 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
 
     sam = SAModel()
     sam.load_weights(model_type=SAModelType.SAM_VIT_H, path_to_weights=path_to_weights)
-
-    input_pts_tensor = torch.tensor(input_pts, device=sam.model.device).unsqueeze(1)
-    transformed_pts = sam.model.transform.apply_coords_torch(input_pts_tensor, image.shape[:2])
-
-    input_lbls = [1 for _ in range(len(input_pts))]
-    input_lbls_tensor = torch.tensor(input_lbls, device=sam.model.device).unsqueeze(1)
-
-    input_boxes = torch.tensor(boxes, device=sam.model.device).unsqueeze(1)
-    transformed_boxes = sam.model.transform.apply_boxes_torch(
-        input_boxes, image.shape[:2]
-    )
-
     sam.set_image(image)
-    masks, iou_scores = sam.predict(points=transformed_pts, labels=input_lbls_tensor)
 
-    masks2, iou_scores2 = sam.predict(bboxes=transformed_boxes)
+    if input_pts:
+        input_pts_tensor = torch.tensor(input_pts, device=sam.model.device).unsqueeze(1)
+        transformed_pts = sam.model.transform.apply_coords_torch(input_pts_tensor, image.shape[:2])
+        input_lbls = [1 for _ in range(len(input_pts))]
+        input_lbls_tensor = torch.tensor(input_lbls, device=sam.model.device).unsqueeze(1)
+        masks, iou_scores = sam.predict(points=transformed_pts, labels=input_lbls_tensor)
+    else:
+        masks, iou_scores = [], []
 
-    final_mask = masks + masks2
-    final_iou = iou_scores + iou_scores2
+    if boxes:
+        input_boxes = torch.tensor(boxes, device=sam.model.device).unsqueeze(1)
+        transformed_boxes = sam.model.transform.apply_boxes_torch(input_boxes, image.shape[:2])
+        masks2, iou_scores2 = sam.predict(bboxes=transformed_boxes)
+    else:
+        masks2, iou_scores2 = [], []
 
-    save_masks_and_ious(final_mask, final_iou)
+    final_masks = masks + masks2
+    final_iou_scores = iou_scores + iou_scores2
 
-    plt.figure(figsize=(10, 10))
-    plt.imshow(image)
-    for mask in final_mask:
-        show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
-    plt.axis('off')
-    plt.show()
+    if final_masks:
+        save_masks_and_ious(final_masks, final_iou_scores)
+
+        plt.figure(figsize=(10, 10))
+        plt.imshow(image)
+        for mask in final_masks:
+            show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
+        plt.axis('off')
+        plt.show()
+    else:
+        print("No points or boxes provided, or model did not predict any masks.")
 
 
 if __name__ == '__main__':
