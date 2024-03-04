@@ -63,27 +63,33 @@ def _threshold_and_binarize(
     bin_thresh = threshold_otsu(adjusted_image)
     filled_img = binary_fill_holes(adjusted_image > bin_thresh)
 
-    lbled_img = morphology.label(filled_img)
+    lbled_img = label(filled_img)
     props = regionprops(lbled_img)
 
     filtered_props = [
         prop for prop in props if size_thresh[0] <= prop.area <= size_thresh[1]
     ]
 
-    bin_mask = morphology.remove_small_objects(lbled_img)
+    bin_mask = np.zeros_like(filled_img, dtype=bool)
 
-    filtered_img = morphology.remove_small_objects(
-        bin_mask, min_size=size_thresh[0], max_size=size_thresh[1]
-    )
+    for prop in filtered_props:
+        y_min, x_min, y_max, x_max = prop.bbox
+        bin_mask[y_min:y_max, x_min:x_max] = True
+
+    filtered_img = filled_img.copy()
+    filtered_img[~bin_mask] = 0
 
     return filtered_img
 
 
-def _filter_img(bin_img, prop, min_solidity, max_aspect_ratio):
+def _filter_img(bin_img, props, min_solidity, max_aspect_ratio):
     """Filteres out `regionprops` based on solidity."""
     # Can be restructured if more filters are required.
 
     for prop in props:
+        if prop.minor_axis_length <= 1:
+            continue  # Skip this region
+
         aspect_ratio = prop.major_axis_length / prop.minor_axis_length
         if aspect_ratio < max_aspect_ratio:
             # Set the corresponding pixel values to False in the binary image
@@ -102,12 +108,11 @@ def _filter_img(bin_img, prop, min_solidity, max_aspect_ratio):
     return filtered_img
 
 
-def _watershed(bin_img, dist_thresh=2):
+def _watershed(bin_img, footprint_kernel=(3, 3)):
     """Watershed segmentation on a binary image."""
     # Perform distance transform
     distances = distance_transform_edt(bin_img)
 
-    footprint_kernel = (3, 3)
     coords = peak_local_max(
         distances, footprint=np.ones(footprint_kernel), labels=bin_img
     )
@@ -157,8 +162,8 @@ def generate_centroid(
         binary image of the segmented image.
     """
     # Preprocess the image
-    image = np.asfarray(image, np.float64) / 255.0  # Normalize
-    deconv_img = _deconvolve(image, stain_vector)
+    normalized_img = np.asfarray(image, np.float64) / 255.0  # Normalize
+    deconv_img = _deconvolve(normalized_img, stain_vector)
     hist_equalized_img = _hist_equalization(
         deconv_img[:, :, 1],
         equalization_bins,
