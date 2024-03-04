@@ -55,6 +55,7 @@ def save_masks_and_ious(masks, iou_scores):
 def sam_main(path_to_weights, annotations_filename='annotations.npz'):
     points, boxes, image = load_annotations(filename=annotations_filename)
     input_pts = points.tolist()
+    boxes = boxes.tolist()
 
     if image is not None:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -67,6 +68,7 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
 
     input_pts_tensor = torch.tensor(input_pts, device=sam.model.device).unsqueeze(1)
     transformed_pts = sam.model.transform.apply_coords_torch(input_pts_tensor, image.shape[:2])
+
     input_lbls = [1 for _ in range(len(input_pts))]
     input_lbls_tensor = torch.tensor(input_lbls, device=sam.model.device).unsqueeze(1)
 
