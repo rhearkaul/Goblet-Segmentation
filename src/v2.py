@@ -4,6 +4,7 @@ import PIL
 from PIL import Image, ImageTk
 import numpy as np
 from tkinter import Button
+from sam2 import sam_main
 
 class ImageViewer(Frame):
     def __init__(self, parent):
@@ -47,6 +48,15 @@ class ImageViewer(Frame):
         sliceMenu.add_command(label="Slice Area Select", command=self.setSliceMode)
         sliceMenu.add_command(label="Confirm Slice", command=self.confirmSlice)
         menubar.add_cascade(label="Slice", menu=sliceMenu)
+
+        samMenu = Menu(menubar)
+        samMenu.add_command(label="Run SAM", command=self.runSAM)
+        menubar.add_cascade(label="SAM", menu=samMenu)
+
+    def runSAM(self):
+        path_to_weights = "sam_vit_h_4b8939.pth"
+        sam_main(path_to_weights)
+        print("SAM function executed.")
 
     def onOpen(self):
         ftypes = [('Image files', '*.jpg *.jpeg *.png *.gif *.bmp')]

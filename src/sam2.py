@@ -52,7 +52,7 @@ def save_masks_and_ious(masks, iou_scores):
         for i, iou in enumerate(iou_scores):
             writer.writerow([i, iou.item()])
 
-def main(path_to_weights, annotations_filename='annotations.npz'):
+def sam_main(path_to_weights, annotations_filename='annotations.npz'):
     points, original_box,image = load_annotations(filename=annotations_filename)
     input_pts = points.tolist()
 
@@ -84,4 +84,4 @@ def main(path_to_weights, annotations_filename='annotations.npz'):
 
 if __name__ == '__main__':
     path_to_weights = "sam_vit_h_4b8939.pth"
-    main(path_to_weights)
+    sam_main(path_to_weights)
