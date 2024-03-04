@@ -265,9 +265,6 @@ class ImageViewer(Frame):
             print("No image opened.")
 
 
-
-
-
 def main():
     root = Tk()
     screen_width = root.winfo_screenwidth()
