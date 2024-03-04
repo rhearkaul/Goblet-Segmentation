@@ -1,3 +1,4 @@
+import os
 from tkinter import Tk, Canvas, Frame, BOTH, Menu, Toplevel, Listbox, END
 from tkinter import filedialog
 import PIL
@@ -171,15 +172,19 @@ class ImageViewer(Frame):
 
     def confirmSlice(self):
         if self.slice_coords:
-
             cropped_image = self.image.crop(self.slice_coords)
-            self.image = cropped_image
 
+            base, ext = os.path.splitext(self.image_path)
+            sliced_image_path = f"{base}_sliced{ext}"
+
+            cropped_image.save(sliced_image_path)
+
+            self.image_path = sliced_image_path
+            self.image = cropped_image
 
             self.photo = ImageTk.PhotoImage(self.image)
             self.canvas.create_image(0, 0, image=self.photo, anchor='nw')
             self.canvas.config(scrollregion=self.canvas.bbox("all"))
-
 
             if self.slice_rect:
                 self.canvas.delete(self.slice_rect)
