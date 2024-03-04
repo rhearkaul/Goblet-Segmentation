@@ -25,6 +25,9 @@ class ImageViewer(Frame):
         self.slice_rect = None
         self.slice_coords = None
 
+        self.selected_annotation_id = None
+        self.selected_annotation_type = None
+
     def initUI(self):
         self.parent.title("Image Viewer")
         self.pack(fill=BOTH, expand=1)
@@ -167,13 +170,36 @@ class ImageViewer(Frame):
         for box in self.boxes:
             self.lb.insert(END, f"Box: {box}")
 
+        self.lb.bind('<<ListboxSelect>>', self.highlightSelectedAnnotation)
+
         delete_button = Button(self.annotatorWindow, text="Delete Selected", command=self.deleteSelected)
         delete_button.pack(side='top')
 
         save_button = Button(self.annotatorWindow, text="Save Annotations", command=self.saveAnnotations)
         save_button.pack(side='top')
 
+    def highlightSelectedAnnotation(self, event):
+        selection = self.lb.curselection()
+        if not selection:
+            return
 
+        index = selection[0]
+
+        if self.selected_annotation_id is not None:
+            if self.selected_annotation_type == 'point':
+                self.canvas.itemconfig(self.selected_annotation_id, fill='red')
+            elif self.selected_annotation_type == 'box':
+                self.canvas.itemconfig(self.selected_annotation_id, outline='green')
+
+        if index < len(self.points):
+            self.selected_annotation_id = self.point_ids[index]
+            self.selected_annotation_type = 'point'
+            self.canvas.itemconfig(self.selected_annotation_id, fill='yellow')
+        else:
+            box_index = index - len(self.points)
+            self.selected_annotation_id = self.box_ids[box_index]
+            self.selected_annotation_type = 'box'
+            self.canvas.itemconfig(self.selected_annotation_id, outline='yellow')
 
     def deleteSelected(self):
         selected = self.lb.curselection()
