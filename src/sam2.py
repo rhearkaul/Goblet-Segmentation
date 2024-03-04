@@ -53,7 +53,7 @@ def save_masks_and_ious(masks, iou_scores):
             writer.writerow([i, iou.item()])
 
 def sam_main(path_to_weights, annotations_filename='annotations.npz'):
-    points, original_box,image = load_annotations(filename=annotations_filename)
+    points, boxes, image = load_annotations(filename=annotations_filename)
     input_pts = points.tolist()
 
     if image is not None:
@@ -70,8 +70,13 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
     input_lbls = [1 for _ in range(len(input_pts))]
     input_lbls_tensor = torch.tensor(input_lbls, device=sam.model.device).unsqueeze(1)
 
+    input_boxes = torch.tensor(boxes, device=sam.model.device).unsqueeze(1)
+    transformed_boxes = sam.model.transform.apply_boxes_torch(
+        input_boxes, image.shape[:2]
+    )
+
     sam.set_image(image)
-    masks, iou_scores = sam.predict(points=transformed_pts, labels=input_lbls_tensor)
+    masks, iou_scores = sam.predict(points=transformed_pts, labels=input_lbls_tensor, bboxes=transformed_boxes)
 
     save_masks_and_ious(masks, iou_scores)
 
