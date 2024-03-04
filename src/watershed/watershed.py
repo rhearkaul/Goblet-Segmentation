@@ -156,7 +156,7 @@ def generate_centroid(
     Returns
     -------
     list[tuple]:
-        containing the centroid coordinates in (x,y).
+        containing the centroid coordinates in (row,col).
 
     ndarray:
         binary image of the segmented image.
@@ -178,7 +178,7 @@ def generate_centroid(
     # Generate promps from watershed
     segmented_img, distances = _watershed(filtered_img, distance_thresh)
     labels = label(segmented_img)
-    props = regionprops(labels, coordinates="xy")
+    props = regionprops(labels)
     centroid_coords = np.array([prop.centroid for prop in props]).astype(int)
 
     return centroid_coords, distances, deconv_img
