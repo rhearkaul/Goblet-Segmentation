@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 import numpy as np
 from tkinter import Button
 from sam2 import sam_main
-import src.watershed.watershed
+import watershed_script as watershed
 
 class ImageViewer(Frame):
     def __init__(self, parent):
@@ -44,6 +44,7 @@ class ImageViewer(Frame):
         annotatorMenu.add_command(label="Point select", command=lambda: self.setAnnotationMode('point'))
         annotatorMenu.add_command(label="Box select", command=lambda: self.setAnnotationMode('box'))
         annotatorMenu.add_command(label="Show annotations", command=self.showAnnotations)
+
         menubar.add_cascade(label="Annotator", menu=annotatorMenu)
 
         sliceMenu = Menu(menubar)
@@ -54,6 +55,13 @@ class ImageViewer(Frame):
         samMenu = Menu(menubar)
         samMenu.add_command(label="Run SAM", command=self.runSAM)
         menubar.add_cascade(label="SAM", menu=samMenu)
+
+        annotatorMenu.add_command(label="Load Annotations", command=self.loadAnnotations)
+
+        watershedMenu = Menu(menubar)
+        watershedMenu.add_command(label="Run watershed", command=self.runWatershed)
+        menubar.add_cascade(label="Watershed", menu=watershedMenu)
+
 
     def runSAM(self):
         path_to_weights = "sam_vit_h_4b8939.pth"
@@ -83,6 +91,43 @@ class ImageViewer(Frame):
             self.canvas.bind("<Button-1>", self.onStartBox)
             self.canvas.bind("<B1-Motion>", self.onDrag)
             self.canvas.bind("<ButtonRelease-1>", self.onRelease)
+
+    def runWatershed(self):
+        if hasattr(self, 'image_path'):
+            watershed.watershed_image(self.image_path)
+            self.loadAnnotations('watershed.npz')
+
+    def loadAnnotations(self, annotation_file):
+        # Load annotations from a given file
+        if os.path.exists(annotation_file):
+            data = np.load(annotation_file, allow_pickle=True)
+            loaded_points = data['points']
+            loaded_boxes = data['boxes']
+
+            # Clear existing annotations
+            for point_id in self.point_ids:
+                self.canvas.delete(point_id)
+            for box_id in self.box_ids:
+                self.canvas.delete(box_id)
+
+            # Clear the lists
+            self.points.clear()
+            self.boxes.clear()
+            self.point_ids.clear()
+            self.box_ids.clear()
+
+            # Load new annotations
+            for point in loaded_points:
+                oval_id = self.canvas.create_oval(point[0] - 2, point[1] - 2, point[0] + 2, point[1] + 2, fill='red')
+                self.points.append((point[0], point[1]))
+                self.point_ids.append(oval_id)
+
+            for box in loaded_boxes:
+                rect_id = self.canvas.create_rectangle(box[0], box[1], box[2], box[3], outline='green')
+                self.boxes.append((box[0], box[1], box[2], box[3]))
+                self.box_ids.append(rect_id)
+        else:
+            print(f"Annotation file {annotation_file} not found.")
 
     def onCanvasClick(self, event):
         if self.annotation_mode == 'point':

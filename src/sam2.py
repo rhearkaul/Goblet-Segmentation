@@ -77,8 +77,6 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
         input_boxes, image.shape[:2]
     )
 
-    print("hold")
-
     sam.set_image(image)
     masks, iou_scores = sam.predict(points=transformed_pts, labels=input_lbls_tensor)
 
