@@ -77,17 +77,25 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
         input_boxes, image.shape[:2]
     )
 
-    sam.set_image(image)
-    masks, iou_scores = sam.predict(points=transformed_pts, labels=input_lbls_tensor, bboxes=transformed_boxes)
+    print("hold")
 
-    save_masks_and_ious(masks, iou_scores)
+    sam.set_image(image)
+    masks, iou_scores = sam.predict(points=transformed_pts, labels=input_lbls_tensor)
+
+    masks2, iou_scores2 = sam.predict(bboxes=transformed_boxes)
+
+    final_mask = masks + masks2
+    final_iou = iou_scores + iou_scores2
+
+    save_masks_and_ious(final_mask, final_iou)
 
     plt.figure(figsize=(10, 10))
     plt.imshow(image)
-    for mask in masks:
+    for mask in final_mask:
         show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
     plt.axis('off')
     plt.show()
+
 
 if __name__ == '__main__':
     path_to_weights = "sam_vit_h_4b8939.pth"

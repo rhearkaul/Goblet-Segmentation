@@ -117,7 +117,7 @@ class SAModel:
             image = np.asarray(image, dtype=np.uint8)
             self.model.set_image(image)
 
-    def predict(self, points: list, labels: list = None, bboxes: list = None):
+    def predict(self, points: list = None, labels: list = None, bboxes: list = None):
         """Perform prediction on the image.
 
         Parameters:
