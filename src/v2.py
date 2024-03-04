@@ -54,6 +54,7 @@ class ImageViewer(Frame):
         fl = dlg.show()
 
         if fl != '':
+            self.image_path = fl  # Save the image path
             self.loadImage(fl)
 
     def loadImage(self, fl):
@@ -115,8 +116,7 @@ class ImageViewer(Frame):
         save_button = Button(self.annotatorWindow, text="Save Annotations", command=self.saveAnnotations)
         save_button.pack(side='top')
 
-        delete_button = Button(self.annotatorWindow, text="Delete Selected", command=self.deleteSelected)
-        delete_button.pack(side='top')
+
 
     def deleteSelected(self):
         selected = self.lb.curselection()
@@ -133,10 +133,13 @@ class ImageViewer(Frame):
             self.lb.delete(index)
 
     def saveAnnotations(self):
-        points_array = np.array(self.points)
-        boxes_array = np.array(self.boxes)
-        np.savez('annotations.npz', points=points_array, boxes=boxes_array)
-        print("Annotations saved.")
+        if hasattr(self, 'image_path'):
+            points_array = np.array(self.points)
+            boxes_array = np.array(self.boxes)
+            np.savez('annotations.npz', points=points_array, boxes=boxes_array, image_path=self.image_path)
+            print("Annotations and image path saved.")
+        else:
+            print("No image opened.")
 
     def setSliceMode(self):
         self.annotation_mode = 'slice'

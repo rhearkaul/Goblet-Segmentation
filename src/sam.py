@@ -13,26 +13,30 @@ print("CUDA is available:", torch.cuda.is_available())
 import sys
 
 def loadAnnotations(filename='annotations.npz'):
-    data = np.load(filename)
+    data = np.load(filename, allow_pickle=True)
     input_points = data['points']
     input_boxes = data['boxes']
+    image_path = str(data['image_path'])  # Convert to string explicitly
+
     print("Loaded points:", input_points)
     print("Loaded boxes:", input_boxes)
-    return input_points, input_boxes
+    print("Image path:", image_path)
+
+    image = cv2.imread(image_path)
+    if image is not None:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    else:
+        print(f"Warning: Image at {image_path} could not be loaded.")
+        image = None
+
+    return input_points, input_boxes, image
 
 
 
-points, original_box = loadAnnotations(filename='annotations.npz')
+points, original_box,image = loadAnnotations(filename='annotations.npz')
 original_box = original_box[0]
 box1_tensor = torch.tensor(original_box)
 
-image_path = "C:/Users/steve/Downloads/data/Data Aug (011924)/raw/test222.jpg"
-image = cv2.imread(image_path)
-if image is not None:
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-else:
-    print(f"Warning: Image at {image_path} could not be loaded.")
-    image = None
 def show_mask(mask, ax, random_color=False):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
