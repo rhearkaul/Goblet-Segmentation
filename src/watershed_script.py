@@ -10,6 +10,7 @@ def show_points(coords, labels, ax, marker_size=375):
 
 def save_annotations(points, image_path, boxes=[]):
     points_array = np.array(points)
+    print(points_array)
     boxes_array = np.array(boxes)
     np.savez('watershed.npz', points=points_array, boxes=boxes_array, image_path=image_path)
     print("Annotations and image path saved.")

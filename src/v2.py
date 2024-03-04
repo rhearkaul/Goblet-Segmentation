@@ -2,7 +2,7 @@ import os
 from tkinter import Tk, Canvas, Frame, BOTH, Menu, Toplevel, Listbox, END
 from tkinter import filedialog
 import PIL
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 import numpy as np
 from tkinter import Button
 from sam2 import sam_main
@@ -27,6 +27,7 @@ class ImageViewer(Frame):
 
         self.selected_annotation_id = None
         self.selected_annotation_type = None
+        self.drawing = False
 
     def initUI(self):
         self.parent.title("Image Viewer")
@@ -59,6 +60,11 @@ class ImageViewer(Frame):
         watershedMenu = Menu(menubar)
         watershedMenu.add_command(label="Run watershed", command=self.runWatershed)
         menubar.add_cascade(label="Watershed", menu=watershedMenu)
+
+        selectMenu = Menu(menubar)
+        selectMenu.add_command(label="Draw", command=self.enableDrawing)
+        selectMenu.add_command(label="Confirm Select", command=self.confirmSelect)
+        menubar.add_cascade(label="Select", menu=selectMenu)
 
 
     def runSAM(self):
@@ -150,7 +156,46 @@ class ImageViewer(Frame):
             self.rect = None
             self.start_x = None
             self.start_y = None
+    def enableDrawing(self):
+        self.drawing = True
+        self.canvas.bind("<B1-Motion>", self.draw)
+        self.canvas.bind("<ButtonRelease-1>", self.stopDrawing)
 
+    def draw(self, event):
+        if self.drawing:
+            self.points.append((event.x, event.y))
+            if len(self.points) > 1:
+                self.canvas.create_line(self.points[-2], self.points[-1], fill='red', width=2)
+
+    def stopDrawing(self, event):
+        if self.drawing and self.points:
+            self.drawing = False
+            if len(self.points) > 1:
+                self.points.append(self.points[0])
+                self.canvas.create_line(self.points[-2], self.points[-1], fill='red', width=2)
+            else:
+                self.points = []
+
+    def confirmSelect(self):
+        if not self.points:
+            return
+
+        mask = Image.new('L', self.image.size, 0)
+        ImageDraw.Draw(mask).polygon(self.points, outline=1, fill=1)
+        mask = np.array(mask)
+
+        new_image_data = np.array(self.image)
+        new_image_data[mask == 0] = 0
+
+        new_image = Image.fromarray(new_image_data)
+        new_image_path = self.image_path.replace('.', '_modified.')
+        new_image.save(new_image_path)
+
+        self.image_path = new_image_path
+
+        self.loadImage(new_image_path)
+
+        self.points = []
     def showAnnotations(self):
         self.annotatorWindow = Toplevel(self)
         self.annotatorWindow.title("Annotations")
