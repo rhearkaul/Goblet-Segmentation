@@ -145,7 +145,6 @@ def generate_centroid(
     size_thresh,
     max_aspect_ratio,
     min_solidity,
-    distance_thresh,
 ):
     """Generates the centroid locations given an image.
 
@@ -176,9 +175,9 @@ def generate_centroid(
     filtered_img = _filter_img(bin_img, props, min_solidity, max_aspect_ratio)
 
     # Generate promps from watershed
-    segmented_img, distances = _watershed(filtered_img, distance_thresh)
+    segmented_img, distances = _watershed(filtered_img)
     labels = label(segmented_img)
     props = regionprops(labels)
     centroid_coords = np.array([prop.centroid for prop in props]).astype(int)
 
-    return centroid_coords, distances, deconv_img
+    return centroid_coords, deconv_img, segmented_img, distances
