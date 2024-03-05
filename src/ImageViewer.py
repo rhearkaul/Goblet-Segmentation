@@ -181,21 +181,22 @@ class ImageViewer(Frame):
             return
 
         mask = Image.new('L', self.image.size, 0)
-        ImageDraw.Draw(mask).polygon(self.points, outline=1, fill=1)
+        ImageDraw.Draw(mask).polygon(self.points, outline=1, fill=255)
         mask = np.array(mask)
 
-        new_image_data = np.array(self.image)
-        new_image_data[mask == 0] = 0
+        new_image_data = np.zeros((*self.image.size[::-1], 3), dtype=np.uint8)
+
+        new_image_data[mask == 255] = 255
 
         new_image = Image.fromarray(new_image_data)
         new_image_path = self.image_path.replace('.', '_modified.')
         new_image.save(new_image_path)
 
         self.image_path = new_image_path
-
         self.loadImage(new_image_path)
 
         self.points = []
+
     def showAnnotations(self):
         self.annotatorWindow = Toplevel(self)
         self.annotatorWindow.title("Annotations")
