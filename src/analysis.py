@@ -13,20 +13,28 @@ def load_image_with_masks(image_path, masks_dir):
     masks = [cv2.imread(os.path.join(masks_dir, mask_file), 0) for mask_file in mask_files]
     return image, masks, mask_files
 
+
 def update_figure(canvas, figure, image, masks, selected_indices):
     figure.clear()
     ax = figure.add_subplot(111)
+
     ax.imshow(image)
+
     for i, mask in enumerate(masks):
-        # Highlight selected masks in red
+        mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.float32)
+
         if i in selected_indices:
-            red_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)
-            red_mask[:, :, 0] = mask  # Red channel
-            ax.imshow(red_mask, alpha=0.5)
+            mask_rgba[..., 0] = 1.0
         else:
-            ax.imshow(mask, alpha=0.5, cmap='gray')
+            mask_rgba[..., :3] = 0.5
+
+        mask_rgba[..., 3] = mask.astype(np.float32) / 255 * 0.5
+
+        ax.imshow(mask_rgba, interpolation='nearest')
+
     ax.axis('off')
     canvas.draw()
+
 
 def on_delete_mask(masks, mask_listbox, canvas, figure, image, masks_dir):
     selected_indices = mask_listbox.curselection()
