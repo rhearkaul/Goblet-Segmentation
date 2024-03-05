@@ -36,11 +36,7 @@ def show_mask(mask, ax, random_color=False):
     mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
     ax.imshow(mask_image)
 
-def save_masks_and_ious(masks, iou_scores):
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    output_dir = f'output_masks/{timestamp}'
-    os.makedirs(output_dir, exist_ok=True)
-
+def save_masks_and_ious(masks, iou_scores, image, output_dir):
     # Save masks as images
     for i, mask in enumerate(masks):
         plt.imsave(f'{output_dir}/mask_{i}.png', mask.cpu().numpy(), cmap='gray')
@@ -51,6 +47,9 @@ def save_masks_and_ious(masks, iou_scores):
         writer.writerow(['Mask Index', 'IOU Score'])
         for i, iou in enumerate(iou_scores):
             writer.writerow([i, iou.item()])
+
+    # Save the predicted image
+    plt.imsave(f'{output_dir}/predicted_image.png', image)
 
 def sam_main(path_to_weights, annotations_filename='annotations.npz'):
     points, boxes, image = load_annotations(filename=annotations_filename)
@@ -87,7 +86,10 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
     final_iou_scores = iou_scores + iou_scores2
 
     if final_masks:
-        save_masks_and_ious(final_masks, final_iou_scores)
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        output_dir = f'output_masks/{timestamp}'
+        os.makedirs(output_dir, exist_ok=True)
+        save_masks_and_ious(final_masks, final_iou_scores, image, output_dir)
 
         plt.figure(figsize=(10, 10))
         plt.imshow(image)
