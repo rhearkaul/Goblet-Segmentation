@@ -78,7 +78,8 @@ class ImageViewer(Frame):
         fl = dlg.show()
 
         if fl != '':
-            self.image_path = fl  # Save the image path
+            self.image_path = fl  # Save the current image path
+            self.original_image_path = fl  # Save the original image path
             self.loadImage(fl)
 
     def loadImage(self, fl):
@@ -97,9 +98,11 @@ class ImageViewer(Frame):
             self.canvas.bind("<ButtonRelease-1>", self.onRelease)
 
     def runWatershed(self):
-        if hasattr(self, 'image_path'):
-            watershed.watershed_image(self.image_path)
+        if hasattr(self, 'image_path') and hasattr(self, 'original_image_path'):
+            watershed.watershed_image(self.image_path, self.original_image_path)
             self.loadAnnotations('watershed.npz')
+        else:
+            print("Image paths are not set.")
 
     def loadAnnotations(self, annotation_file):
         # Load annotations from a given file
@@ -185,14 +188,13 @@ class ImageViewer(Frame):
         mask = np.array(mask)
 
         new_image_data = np.zeros((*self.image.size[::-1], 3), dtype=np.uint8)
-
         new_image_data[mask == 255] = 255
 
         new_image = Image.fromarray(new_image_data)
         new_image_path = self.image_path.replace('.', '_modified.')
         new_image.save(new_image_path)
 
-        self.image_path = new_image_path
+        self.image_path = new_image_path  # Update the current image path
         self.loadImage(new_image_path)
 
         self.points = []

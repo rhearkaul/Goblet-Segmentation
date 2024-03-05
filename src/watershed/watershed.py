@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib import pyplot as plt
 from scipy.linalg import inv
 from scipy.ndimage import binary_fill_holes, distance_transform_edt
 from skimage import morphology
@@ -7,6 +8,8 @@ from skimage.feature import peak_local_max
 from skimage.filters import threshold_otsu
 from skimage.measure import label, regionprops
 from skimage.segmentation import watershed
+from skimage import io
+
 
 STAIN_VECTORS = {
     0: np.array(
@@ -170,7 +173,8 @@ def generate_centroid(
     )
 
     mask_img = hist_equalized_img * bin_mask
-
+    io.imshow(mask_img)
+    io.show()
     bin_img = _threshold_and_binarize(mask_img, intensity_thresh, size_thresh)
 
     # Filter out noise (certain shapes)
