@@ -3,6 +3,8 @@ import numpy as np
 import src.watershed.watershed as watershed
 
 def show_points(coords, labels, ax, marker_size=375):
+    # Swap coords !
+    coords[:, [0, 1]] = coords[:, [1, 0]]
     pos_points = coords[labels == 1]
     neg_points = coords[labels == 0]
     ax.scatter(pos_points[:, 0], pos_points[:, 1], color='green', marker='*', s=marker_size, edgecolor='white', linewidth=1.25)
@@ -10,6 +12,8 @@ def show_points(coords, labels, ax, marker_size=375):
 
 def save_annotations(points, image_path, boxes=[]):
     points_array = np.array(points)
+    # Swap the columns!
+    points_array[:, [0, 1]] = points_array[:, [1, 0]]
     print(points_array)
     boxes_array = np.array(boxes)
     np.savez('watershed.npz', points=points_array, boxes=boxes_array, image_path=image_path)
@@ -36,6 +40,7 @@ def watershed_image(image_path):
     coords, _, _, _ = watershed.generate_centroid(image=rgb_image, **kwargs)
 
     save_annotations(coords, image_path)
+
 
 if __name__ == "__main__":
     import sys
