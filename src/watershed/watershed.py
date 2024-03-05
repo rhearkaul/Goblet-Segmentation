@@ -139,6 +139,7 @@ REGION_PROP_KEYS = (
 
 def generate_centroid(
     image,
+    bin_mask,
     stain_vector,
     equalization_bins,
     intensity_thresh,
@@ -167,7 +168,10 @@ def generate_centroid(
         deconv_img[:, :, 1],
         equalization_bins,
     )
-    bin_img = _threshold_and_binarize(hist_equalized_img, intensity_thresh, size_thresh)
+
+    mask_img = hist_equalized_img * bin_mask
+
+    bin_img = _threshold_and_binarize(mask_img, intensity_thresh, size_thresh)
 
     # Filter out noise (certain shapes)
     labels = label(bin_img)
