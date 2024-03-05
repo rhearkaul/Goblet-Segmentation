@@ -13,12 +13,18 @@ def load_image_with_masks(image_path, masks_dir):
     masks = [cv2.imread(os.path.join(masks_dir, mask_file), 0) for mask_file in mask_files]
     return image, masks, mask_files
 
-def update_figure(canvas, figure, image, masks):
+def update_figure(canvas, figure, image, masks, selected_indices):
     figure.clear()
     ax = figure.add_subplot(111)
     ax.imshow(image)
-    for mask in masks:
-        ax.imshow(mask, alpha=0.5, cmap='gray')
+    for i, mask in enumerate(masks):
+        # Highlight selected masks in red
+        if i in selected_indices:
+            red_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)
+            red_mask[:, :, 0] = mask  # Red channel
+            ax.imshow(red_mask, alpha=0.5)
+        else:
+            ax.imshow(mask, alpha=0.5, cmap='gray')
     ax.axis('off')
     canvas.draw()
 
@@ -34,7 +40,10 @@ def on_delete_mask(masks, mask_listbox, canvas, figure, image, masks_dir):
         del masks[index]
         mask_listbox.delete(index)
 
-    update_figure(canvas, figure, image, masks)
+    update_figure(canvas, figure, image, masks, mask_listbox.curselection())
+
+def on_mask_selection_change(event, masks, mask_listbox, canvas, figure, image):
+    update_figure(canvas, figure, image, masks, mask_listbox.curselection())
 
 def main():
     root = tk.Tk()
@@ -47,7 +56,7 @@ def main():
     image_path = filedialog.askopenfilename(title="Select the Predicted Image", filetypes=[("PNG files", "*.png")])
     masks_dir = filedialog.askdirectory(title="Select the Masks Directory")
     image, masks, mask_files = load_image_with_masks(image_path, masks_dir)
-    update_figure(canvas, figure, image, masks)
+    update_figure(canvas, figure, image, masks, [])
 
     mask_list_frame = tk.Frame(root)
     mask_list_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -61,6 +70,8 @@ def main():
     for mask_file in mask_files:
         mask_listbox.insert(tk.END, mask_file)
 
+    mask_listbox.bind('<<ListboxSelect>>', lambda event: on_mask_selection_change(event, masks, mask_listbox, canvas, figure, image))
+
     delete_button = tk.Button(root, text="Delete Selected Mask(s)", command=lambda: on_delete_mask(masks, mask_listbox, canvas, figure, image, masks_dir))
     delete_button.pack(side=tk.TOP)
 
@@ -68,4 +79,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
