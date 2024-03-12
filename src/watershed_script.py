@@ -17,7 +17,7 @@ def save_annotations(points, image_path, boxes=[]):
     np.savez('watershed.npz', points=points_array, boxes=boxes_array, image_path=image_path)
     print("Annotations and image path saved.")
 
-def watershed_image(bin_image_path,image_path):
+def watershed_image(bin_image_path, image_path):
     # Watershed parameters
     stain_vector = watershed.STAIN_VECTORS
     intensity_thresh = watershed.INTENSITY_THRESHOLDS
@@ -44,17 +44,20 @@ def watershed_image(bin_image_path,image_path):
     # Load and display the binary mask image
     bin_image = cv2.imread(bin_image_path)
     bin_image_grey = cv2.cvtColor(bin_image, cv2.COLOR_BGR2GRAY)
+    # Convert grayscale image to boolean array where white is True and black is False
+    _, bin_image_bool = cv2.threshold(bin_image_grey, 127, 1, cv2.THRESH_BINARY)
+    print(bin_image_bool.astype(bool))
     plt.subplot(1, 2, 2)
-    plt.imshow(bin_image_grey, cmap='gray')
+    plt.imshow(bin_image_bool, cmap='gray')
     plt.title('Binary Mask Image')
     plt.axis('off')
 
     plt.show()
 
-
-    coords, _, _, _ = watershed.generate_centroid(image=rgb_image,bin_mask=bin_image_grey, **kwargs)
+    coords, _, _, _ = watershed.generate_centroid(image=rgb_image, bin_mask=bin_image_bool.astype(bool), **kwargs)
 
     save_annotations(coords, image_path)
+
 
 
 if __name__ == "__main__":
