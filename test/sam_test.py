@@ -38,7 +38,7 @@ def test_load_bad_paths(model: SAModel, path: str):
 
 @pytest.mark.parametrize("model_type, name", args)
 def test_fail_download(model: SAModel, model_type: SAModelType, name: str):
-    """Tests failed http requests"""
+    """Tests failed http requests."""
     url_base = "https://dl.fbaipublicfiles.com/segment_anything"
     error_code = 404
 
@@ -50,6 +50,7 @@ def test_fail_download(model: SAModel, model_type: SAModelType, name: str):
 
 @pytest.mark.parametrize("model_type, name", args)
 def test_predict_with_base_weights(model: SAModel, model_type: SAModelType, name: str):
+    """Tests the predict function with at least the base weights."""
     model.load_weights(model_type)
 
     image = cv2.imread("test/images/test_mask.png")
