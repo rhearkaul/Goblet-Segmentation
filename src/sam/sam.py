@@ -44,12 +44,6 @@ class SAModel:
 
         selected_model = self.CHECKPOINTS[model_type]
 
-        if selected_model in os.listdir():
-            logging.info(f"'{model_type.value}' weights exists, proceeding...")
-            return selected_model
-
-        logging.info(f"Getting '{model_type.value}' weights...")
-
         req = requests.get(f"{url_base}/{selected_model}")
 
         if req.status_code == 200:
@@ -62,7 +56,15 @@ class SAModel:
 
     def _load_base_weights(self, model_type: SAModelType = SAModelType.SAM_VIT_L):
         try:
-            path_to_weights = self._download_weights(model_type)
+            selected_model = self.CHECKPOINTS[model_type]
+
+            if selected_model in os.listdir():
+                logging.info(f"'{model_type.value}' weights exists, proceeding...")
+                path_to_weights = selected_model
+            else:
+                logging.info(f"Getting '{model_type.value}' weights...")
+                path_to_weights = self._download_weights(model_type)
+
         except RuntimeError:
             path_to_weights = None
             logging.error("Unable to obtain weights, empty model will be loaded.")
