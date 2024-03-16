@@ -1,6 +1,9 @@
 # These tests are to check if SAM is correctly built
+import cv2
+import numpy as np
 import pytest
 import requests_mock
+import torch
 
 from src.sam.sam import SAModel, SAModelType
 
@@ -43,3 +46,31 @@ def test_fail_download(model: SAModel, model_type: SAModelType, name: str):
         with requests_mock.Mocker() as mock:
             mock.get(f"{url_base}/{name}", status_code=error_code)
             model._download_weights(model_type)
+
+
+@pytest.mark.parametrize("model_type, name", args)
+def test_predict_with_base_weights(model: SAModel, model_type: SAModelType, name: str):
+    model.load_weights(model_type)
+
+    image = cv2.imread("test/images/test_mask.png")
+    model.set_image(image)
+
+    # Get prediction points
+    n_row, n_col, _ = image.shape
+    midpoint = [[n_row // 2, n_col // 2]]
+
+    input_pts_tensor = torch.tensor(midpoint, device=model.model.device).unsqueeze(1)
+    transformed_pts = model.model.transform.apply_coords_torch(
+        input_pts_tensor, image.shape[:2]
+    )
+
+    input_lbls = [1]
+    transformed_labels = torch.tensor(input_lbls, device=model.model.device).unsqueeze(
+        1
+    )
+
+    output = model.predict(transformed_pts, transformed_labels)
+    output = np.asarray(output[0][0], dtype=np.uint8)
+
+    image2 = cv2.imread("test/images/test_mask.png", cv2.IMREAD_GRAYSCALE) / 255
+    assert np.array_equal(image2, output)
