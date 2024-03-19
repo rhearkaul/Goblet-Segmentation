@@ -144,23 +144,26 @@ class SAModel:
         """
         if (points and not labels) or (not points and labels):
             raise ValueError("Points and labels must be used together.")
-
-        if points and bboxes:
+        elif points and bboxes:
             raise NotImplementedError("Using points and bboxes is currently unsported.")
 
-        if not (points and labels and bboxes):
+        if not (points or labels or bboxes):
             return [], []
 
         input_pts = self._prepare_tensor([points]) if points else None
         input_lbls = self._prepare_tensor(labels) if labels else None
         input_bboxes = self._prepare_tensor(bboxes) if bboxes else None
 
-        transformed_points = self.model.transform.apply_coords_torch(
-            input_pts, self._image_shape[:2]
+        transformed_points = (
+            self.model.transform.apply_coords_torch(input_pts, self._image_shape[:2])
+            if points
+            else None
         )
 
-        transformed_bboxes = self.model.transform.apply_boxes_torch(
-            input_bboxes, self._image_shape[:2]
+        transformed_bboxes = (
+            self.model.transform.apply_boxes_torch(input_bboxes, self._image_shape[:2])
+            if bboxes
+            else None
         )
 
         masks, scores, _ = self.model.predict_torch(
