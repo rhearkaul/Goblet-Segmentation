@@ -120,6 +120,7 @@ class SAModel:
         if self.model:
             image = np.asarray(image, dtype=np.uint8)
             self.model.set_image(image)
+            self._image_shape = image.shape
 
     def predict(self, points: list = None, labels: list = None, bboxes: list = None):
         """Perform prediction on the image.
@@ -141,10 +142,31 @@ class SAModel:
         tuple:
             containing the mask and the respective iou scores.
         """
+        if (points and not labels) or (not points and labels):
+            raise ValueError("Points and labels must be used together.")
+
+        if points and bboxes:
+            raise NotImplementedError("Using points and bboxes is currently unsported.")
+
+        if not (points and labels and bboxes):
+            return [], []
+
+        input_pts = self._prepare_tensor([points]) if points else None
+        input_lbls = self._prepare_tensor(labels) if labels else None
+        input_bboxes = self._prepare_tensor(bboxes) if bboxes else None
+
+        transformed_points = self.model.transform.apply_coords_torch(
+            input_pts, self._image_shape[:2]
+        )
+
+        transformed_bboxes = self.model.transform.apply_boxes_torch(
+            input_bboxes, self._image_shape[:2]
+        )
+
         masks, scores, _ = self.model.predict_torch(
-            point_coords=points,
-            point_labels=labels,
-            boxes=bboxes,
+            point_coords=transformed_points,
+            point_labels=input_lbls,
+            boxes=transformed_bboxes,
             multimask_output=True,
         )
 
@@ -157,3 +179,7 @@ class SAModel:
             iou_scores.append(scores[i].max())
 
         return output_masks, iou_scores
+
+    def _prepare_tensor(self, x: list):
+        inputs = torch.tensor(x, device=self.model.device)
+        return inputs.unsqueeze(1)
