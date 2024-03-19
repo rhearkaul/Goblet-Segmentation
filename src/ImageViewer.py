@@ -8,6 +8,7 @@ from tkinter import Button
 from sam2 import sam_main
 import watershed_script as watershed
 
+
 class ImageViewer(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)
@@ -29,12 +30,17 @@ class ImageViewer(Frame):
         self.selected_annotation_type = None
         self.drawing = False
 
+        self.zoom_level = 1.0  # Initial zoom level
+        self.original_image_size = (0, 0)  # To store the original image size
+
     def initUI(self):
         self.parent.title("Image Viewer")
         self.pack(fill=BOTH, expand=1)
         self.canvas = Canvas(self)
         self.canvas.pack(fill=BOTH, expand=1)
         self.createMenuBar()
+
+        self.canvas.bind("<MouseWheel>", self.onZoom)
 
     def createMenuBar(self):
         menubar = Menu(self.parent)
@@ -78,16 +84,45 @@ class ImageViewer(Frame):
         fl = dlg.show()
 
         if fl != '':
-            self.image_path = fl  # Save the current image path
-            self.original_image_path = fl  # Save the original image path
+            self.image_path = fl
+            self.original_image_path = fl
             self.loadImage(fl)
 
     def loadImage(self, fl):
         self.image = Image.open(fl)
+        self.original_image_size = self.image.size
         self.photo = ImageTk.PhotoImage(self.image)
         self.canvas.create_image(0, 0, image=self.photo, anchor='nw')
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
+        self.zoom_level = 1.0  # Reset zoom level on new image load
+    def onZoom(self, event):
+        zoom_factor = 1.1
+        if event.delta > 0:
+            self.zoom_level *= zoom_factor  # Zoom in
+        elif event.delta < 0:
+            self.zoom_level /= zoom_factor  # Zoom out
 
+        # Resize the image based on the new zoom level
+        new_size = (int(self.original_image_size[0] * self.zoom_level),
+                    int(self.original_image_size[1] * self.zoom_level))
+        resized_image = self.image.resize(new_size, Image.Resampling.LANCZOS)
+        self.photo = ImageTk.PhotoImage(resized_image)
+
+        self.canvas.delete("all")
+        self.canvas.create_image(0, 0, image=self.photo, anchor='nw')
+        self.canvas.config(scrollregion=self.canvas.bbox("all"))
+
+        self.drawAnnotations()
+    def drawAnnotations(self):
+        for point in self.points:
+            x, y = point
+            scaled_x, scaled_y = x * self.zoom_level, y * self.zoom_level
+            self.canvas.create_oval(scaled_x - 2, scaled_y - 2, scaled_x + 2, scaled_y + 2, fill='red')
+
+        for box in self.boxes:
+            x1, y1, x2, y2 = box
+            scaled_box = [coord * self.zoom_level for coord in box]
+            self.canvas.create_rectangle(scaled_box, outline='green')
     def setAnnotationMode(self, mode):
         self.annotation_mode = mode
         if mode == 'point':
