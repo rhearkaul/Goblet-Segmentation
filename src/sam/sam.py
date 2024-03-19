@@ -142,6 +142,8 @@ class SAModel:
         tuple:
             containing the mask and the respective iou scores.
         """
+        if not self.model:
+            raise ValueError("Model needs to be loaded before prediction.")
         if (points and not labels) or (not points and labels):
             raise ValueError("Points and labels must be used together.")
         elif points and bboxes:
