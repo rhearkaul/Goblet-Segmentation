@@ -49,7 +49,9 @@ def test_fail_download(model: SAModel, model_type: SAModelType, name: str):
 
 
 @pytest.mark.parametrize("model_type, name", args)
-def test_predict_with_base_weights(model: SAModel, model_type: SAModelType, name: str):
+def test_pt_predict_with_base_weights(
+    model: SAModel, model_type: SAModelType, name: str
+):
     """Tests the predict function with at least the base weights."""
     model.load_weights(model_type)
 
@@ -58,20 +60,31 @@ def test_predict_with_base_weights(model: SAModel, model_type: SAModelType, name
 
     # Get prediction points
     n_row, n_col, _ = image.shape
-    midpoint = [[n_row // 2, n_col // 2]]
+    midpoint = [n_row // 2, n_col // 2]
 
-    input_pts_tensor = torch.tensor(midpoint, device=model.model.device).unsqueeze(1)
-    transformed_pts = model.model.transform.apply_coords_torch(
-        input_pts_tensor, image.shape[:2]
-    )
-
-    input_lbls = [1]
-    transformed_labels = torch.tensor(input_lbls, device=model.model.device).unsqueeze(
-        1
-    )
-
-    output = model.predict(transformed_pts, transformed_labels)
+    output = model.predict(midpoint, labels=[1], bboxes=None)
     output = np.asarray(output[0][0], dtype=np.uint8)
 
     image2 = cv2.imread("test/images/test_mask.png", cv2.IMREAD_GRAYSCALE) / 255
     assert np.array_equal(image2, output)
+
+
+test_lbl = 1
+test_tup = [0, 0]
+
+predict_args = [
+    (True, [test_tup], [], [], ValueError),
+    (True, [], [test_lbl], [], ValueError),
+    (True, [test_tup], [test_lbl], [test_tup], NotImplementedError),
+    (False, [], [], [], AttributeError),
+]
+
+
+@pytest.mark.parametrize("flag, points, labels, bboxes, exception", predict_args)
+def test_predict_inputs(model: SAModel, flag, points, labels, bboxes, exception):
+    """Tests the predict conditional errors."""
+    with pytest.raises(exception):
+        if flag:
+            model.load_weights(SAModelType.SAM_VIT_B)
+
+        model.predict(points, labels, bboxes)
