@@ -169,7 +169,7 @@ def generate_centroid(
         equalization_bins,
     )
 
-    mask_img = hist_equalized_img.copy() * bin_img
+    mask_img = hist_equalized_img.copy() * bin_mask
 
     bin_img = _threshold_and_binarize(mask_img, intensity_thresh, size_thresh)
 
