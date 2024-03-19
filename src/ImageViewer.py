@@ -138,9 +138,24 @@ class ImageViewer(Frame):
 
     def onCanvasClick(self, event):
         if self.annotation_mode == 'point':
+            # Check if any existing point is close to the click
+            for idx, (x, y) in enumerate(self.points):
+                if abs(x - event.x) < 5 and abs(y - event.y) < 5:  # Adjust tolerance as needed
+                    self.highlightAndSelectAnnotation(idx, 'point')
+                    return
+            # No nearby point found, create a new one
             oval_id = self.canvas.create_oval(event.x - 2, event.y - 2, event.x + 2, event.y + 2, fill='red')
             self.points.append((event.x, event.y))
             self.point_ids.append(oval_id)
+        elif self.annotation_mode == 'box':
+            # Check if the click is near any of the box corners
+            for idx, (x1, y1, x2, y2) in enumerate(self.boxes):
+                if ((abs(x1 - event.x) < 5 and abs(y1 - event.y) < 5) or
+                        (abs(x2 - event.x) < 5 and abs(y2 - event.y) < 5)):
+                    self.highlightAndSelectAnnotation(idx, 'box')
+                    return
+            # No nearby box found, proceed with box creation
+            self.onStartBox(event)
 
     def onStartBox(self, event):
         self.start_x = event.x
@@ -266,6 +281,24 @@ class ImageViewer(Frame):
             print("Annotations and image path saved.")
         else:
             print("No image opened.")
+
+
+
+    def highlightAndSelectAnnotation(self, index, annotation_type):
+        self.clearPreviousSelection()
+        self.selected_annotation_id = self.point_ids[index] if annotation_type == 'point' else self.box_ids[index - len(self.points)]
+        self.selected_annotation_type = annotation_type
+        color = 'yellow' if annotation_type == 'point' else 'orange'
+        self.canvas.itemconfig(self.selected_annotation_id, fill=color if annotation_type == 'point' else None, outline=color if annotation_type == 'box' else None)
+
+    def clearPreviousSelection(self):
+        if self.selected_annotation_id is not None:
+            if self.selected_annotation_type == 'point':
+                self.canvas.itemconfig(self.selected_annotation_id, fill='red')
+            elif self.selected_annotation_type == 'box':
+                self.canvas.itemconfig(self.selected_annotation_id, outline='green')
+            self.selected_annotation_id = None
+            self.selected_annotation_type = None
 
 
 def main():
