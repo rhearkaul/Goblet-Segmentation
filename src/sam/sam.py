@@ -44,12 +44,6 @@ class SAModel:
 
         selected_model = self.CHECKPOINTS[model_type]
 
-        if selected_model in os.listdir():
-            logging.info(f"'{model_type.value}' weights exists, proceeding...")
-            return selected_model
-
-        logging.info(f"Getting '{model_type.value}' weights...")
-
         req = requests.get(f"{url_base}/{selected_model}")
 
         if req.status_code == 200:
@@ -60,14 +54,22 @@ class SAModel:
         else:
             raise RuntimeError("Unable to obtain weights.")
 
-    def load_base_weights(self, model_type: SAModelType = SAModelType.SAM_VIT_L):
+    def _load_base_weights(self, model_type: SAModelType = SAModelType.SAM_VIT_L):
         try:
-            path_to_weights = self._download_weights(model_type)
+            selected_model = self.CHECKPOINTS[model_type]
+
+            if selected_model in os.listdir():
+                logging.info(f"'{model_type.value}' weights exists, proceeding...")
+                path_to_weights = selected_model
+            else:
+                logging.info(f"Getting '{model_type.value}' weights...")
+                path_to_weights = self._download_weights(model_type)
+
         except RuntimeError:
             path_to_weights = None
             logging.error("Unable to obtain weights, empty model will be loaded.")
         else:
-            sam = build_sam_vit_l(path_to_weights)
+            sam = sam_model_registry[model_type.value](path_to_weights)
 
         return sam
 
@@ -90,12 +92,14 @@ class SAModel:
         try:
             if not path_to_weights:
                 logging.info("Paths to weights not set, default will be loaded")
-                sam = self.load_base_weights()
+                sam = self._load_base_weights()
+            elif not path_to_weights.endswith(".pth"):
+                raise ValueError("Not a weight file.")
             else:
                 sam = sam_model_registry[model_type.value](path_to_weights)
-        except (RuntimeError, FileNotFoundError) as error:
+        except (RuntimeError, FileNotFoundError, ValueError) as error:
             logging.error(f"Something went wrong, loading base instead: {error}")
-            sam = self.load_base_weights()
+            sam = self._load_base_weights()
         else:
             logging.info("Weights loaded sucessfully!")
         finally:
