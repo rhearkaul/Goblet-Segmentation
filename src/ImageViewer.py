@@ -8,6 +8,16 @@ from tkinter import Button
 from sam2 import sam_main
 import watershed_script as watershed
 
+from analysis import load_image_with_masks, update_figure, on_delete_mask, on_mask_selection_change
+import tkinter as tk
+from tkinter import filedialog, messagebox
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import os
+import cv2
+
+
+
 
 class ImageViewer(Frame):
     def __init__(self, parent):
@@ -71,6 +81,10 @@ class ImageViewer(Frame):
         selectMenu.add_command(label="Draw", command=self.enableDrawing)
         selectMenu.add_command(label="Confirm Select", command=self.confirmSelect)
         menubar.add_cascade(label="Select", menu=selectMenu)
+
+        analysisMenu = Menu(menubar)
+        analysisMenu.add_command(label="Launch Tool", command=self.launchAnalysisTool)
+        menubar.add_cascade(label="Analysis", menu=analysisMenu)
 
 
     def runSAM(self):
@@ -334,6 +348,44 @@ class ImageViewer(Frame):
                 self.canvas.itemconfig(self.selected_annotation_id, outline='green')
             self.selected_annotation_id = None
             self.selected_annotation_type = None
+
+    def launchAnalysisTool(self):
+        analysis_window = Toplevel(self)
+        analysis_window.title("Image Analysis")
+
+        figure = plt.Figure()
+        canvas = FigureCanvasTkAgg(figure, analysis_window)
+        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        if not hasattr(self, 'image_path'):
+            messagebox.showinfo("Info", "Please open an image first.")
+            return
+
+        masks_dir = filedialog.askdirectory(title="Select the Masks Directory")
+        if not masks_dir:
+            return
+
+        image, masks, mask_files = load_image_with_masks(self.image_path, masks_dir)
+        update_figure(canvas, figure, image, masks, [])
+
+        mask_list_frame = tk.Frame(analysis_window)
+        mask_list_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        mask_listbox = tk.Listbox(mask_list_frame, selectmode=tk.MULTIPLE, width=50, height=20)
+        mask_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar = tk.Scrollbar(mask_list_frame, orient="vertical")
+        scrollbar.config(command=mask_listbox.yview)
+        scrollbar.pack(side=tk.RIGHT, fill="y")
+        mask_listbox.config(yscrollcommand=scrollbar.set)
+
+        for mask_file in mask_files:
+            mask_listbox.insert(tk.END, mask_file)
+
+        mask_listbox.bind('<<ListboxSelect>>',
+                          lambda event: on_mask_selection_change(event, masks, mask_listbox, canvas, figure, image))
+
+        delete_button = tk.Button(analysis_window, text="Delete Selected Mask(s)",
+                                  command=lambda: on_delete_mask(masks, mask_listbox, canvas, figure, image, masks_dir))
+        delete_button.pack(side=tk.TOP)
 
 
 def main():
