@@ -59,3 +59,29 @@ def get_prop(binary_mask: list, properties: list = PROPERTIES):
     # Return the largest mask in case of artefacts
     i_max = df["area"].idxmax()
     return df.loc(i_max)
+
+
+def detect_outliers(data: pd.DataFrame | list, alpha: float = 3):
+    """Uses Z-test as a method for outlier detection`.
+
+    Developer Note: other implementations could work. Suggestion for
+    future implementation can be found in `sklearn`.
+
+    Parameters:
+    -----------
+    data: pd.DataFrame | list
+        a one-dimensional dataset that contains some information about the data.
+
+    alpha: float
+        sigma threshold required to pass detection.
+
+    Returns:
+    --------
+    tuple:
+        of pd.DataFrames containing inliers and outliers, respectively.
+    """
+    df = pd.DataFrame(data)
+    z_scores = (df - df.mean()) / df.std()
+    filter = abs(z_scores) < alpha
+
+    return df[filter], df[~filter]
