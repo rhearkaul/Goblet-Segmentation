@@ -61,7 +61,7 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     else:
         print(f"Warning: Image could not be loaded.")
-        return
+        return None
 
     sam = SAModel()
     sam.load_weights(model_type=SAModelType.SAM_VIT_H, path_to_weights=path_to_weights)
@@ -98,8 +98,10 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
             show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
         plt.axis('off')
         plt.show()
+        return output_dir
     else:
         print("No points or boxes provided, or model did not predict any masks.")
+        return None
 
 
 if __name__ == '__main__':

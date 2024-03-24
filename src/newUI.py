@@ -9,7 +9,8 @@ class ImageViewer(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Image Viewer")
-        self.opened_image = None
+        self.base_image = None
+        self.mask_images = []
 
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
@@ -21,7 +22,6 @@ class ImageViewer(tk.Tk):
         self.geometry(f"{window_width}x{window_height}")
         self.resizable(False, False)  # Disable window resizing
 
-        self.opened_image = None
         self.box_select_mode = False
         self.point_select_mode = False
         self.points = []
@@ -33,7 +33,6 @@ class ImageViewer(tk.Tk):
         self.create_menubar()
 
         self.rect_id = None
-
     def create_widgets(self, window_width, window_height):
 
         toolbar_frame = tk.Frame(self, bg="gray")
@@ -100,6 +99,45 @@ class ImageViewer(tk.Tk):
         menubar.add_cascade(label="Menu 3", menu=menu3)
         menubar.add_cascade(label="Menu 4", menu=menu4)
 
+    def open_base_image(self, image_path=None):
+        if image_path is None:
+            image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
+        if image_path:
+            self.base_image_path = image_path
+            image = Image.open(image_path)
+            image.thumbnail((800, 600))
+            self.base_image = image
+            self.display_images()
+            self.clear_annotations()
+            print(f"Base image opened: {image_path}")
+        else:
+            self.base_image = None
+            self.canvas.delete("all")
+            print("No base image selected.")
+
+    def add_mask_image(self, image_path=None):
+        if image_path is None:
+            image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
+        if image_path:
+            image = Image.open(image_path)
+            image.thumbnail((800, 600))
+            self.mask_images.append(image)
+            self.display_images()
+            print(f"Mask image added: {image_path}")
+        else:
+            print("No mask image selected.")
+
+    def display_images(self):
+        self.canvas.delete("all")
+        if self.base_image:
+            photo = ImageTk.PhotoImage(self.base_image)
+            self.canvas.image = photo
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
+
+        for mask_image in self.mask_images:
+            mask_photo = ImageTk.PhotoImage(mask_image)
+            self.canvas.image = mask_photo
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=mask_photo)
     def open_image(self):
         image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
         if image_path:
@@ -294,15 +332,27 @@ class ImageViewer(tk.Tk):
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
         path_to_weights = "sam_vit_h_4b8939.pth"
-        sam_main(path_to_weights, annotations_filename='current_annotations.npz')
+        output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz')
+        if output_dir:
+            self.clear_annotations()
+            self.open_base_image(image_path=os.path.join(output_dir, 'predicted_image.png'))
+            mask_files = [f for f in os.listdir(output_dir) if f.startswith('mask_') and f.endswith('.png')]
+            for mask_file in mask_files:
+                self.add_mask_image(image_path=os.path.join(output_dir, mask_file))
         print("SAM function executed with current annotation.")
 
     def run_sam_with_selected_annotation(self):
         annotation_file = filedialog.askopenfilename(filetypes=[("Annotation Files", "*.npz")])
         if annotation_file:
             path_to_weights = "sam_vit_h_4b8939.pth"
-            sam_main(path_to_weights, annotations_filename=annotation_file)
-            print("SAM function executed with selected annotation.")
+            output_dir = sam_main(path_to_weights, annotations_filename=annotation_file)
+            if output_dir:
+                self.clear_annotations()
+                self.open_base_image(image_path=os.path.join(output_dir, 'predicted_image.png'))
+                mask_files = [f for f in os.listdir(output_dir) if f.startswith('mask_') and f.endswith('.png')]
+                for mask_file in mask_files:
+                    self.add_mask_image(image_path=os.path.join(output_dir, mask_file))
+        print("SAM function executed with selected annotation.")
 
 
 if __name__ == "__main__":
