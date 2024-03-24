@@ -228,8 +228,20 @@ class ImageViewer(tk.Tk):
             self.update_annotation_listbox()
             self.canvas.delete("highlight")
 
-    def save_annotations(self, default_filename='annotations.npz'):
+    def save_annotations(self):
         if self.opened_image:
+            file_path = filedialog.asksaveasfilename(defaultextension=".npz", filetypes=[("Numpy Files", "*.npz")])
+            if file_path:
+                points_array = np.array(self.points)
+                boxes_array = np.array(self.boxes)
+                np.savez(file_path, points=points_array, boxes=boxes_array, image_path=self.image_path)
+                print(f"Annotations saved successfully as {file_path}.")
+        else:
+            print("No image opened. Please open an image before saving annotations.")
+
+    def save_current_annotations(self):
+        if self.opened_image:
+            default_filename = 'current_annotations.npz'
             points_array = np.array(self.points)
             boxes_array = np.array(self.boxes)
             np.savez(default_filename, points=points_array, boxes=boxes_array, image_path=self.image_path)
@@ -280,7 +292,7 @@ class ImageViewer(tk.Tk):
             print(f"Annotation file {annotation_file} not found.")
 
     def run_sam_with_current_annotation(self):
-        self.save_annotations(default_filename='current_annotations.npz')
+        self.save_current_annotations()
         path_to_weights = "sam_vit_h_4b8939.pth"
         sam_main(path_to_weights, annotations_filename='current_annotations.npz')
         print("SAM function executed with current annotation.")
