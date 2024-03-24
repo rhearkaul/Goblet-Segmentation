@@ -27,6 +27,7 @@ def load_annotations(filename='annotations.npz'):
 
     return input_points, input_boxes, image
 
+
 def show_mask(mask, ax, random_color=False):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
@@ -61,6 +62,8 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
     else:
         print(f"Warning: Image could not be loaded.")
         return
+
+    show_mask()
 
     sam = SAModel()
     sam.load_weights(model_type=SAModelType.SAM_VIT_H, path_to_weights=path_to_weights)

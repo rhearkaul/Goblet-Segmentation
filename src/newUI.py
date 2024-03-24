@@ -147,7 +147,7 @@ class ImageViewer(tk.Tk):
         if self.opened_image and self.box_select_mode:
             if self.rect_id:
                 self.canvas.delete(self.rect_id)
-            self.rect_id = self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline='green')
+            self.rect_id = self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline='red')
 
     def on_canvas_release(self, event):
         if self.opened_image and self.box_select_mode:
@@ -175,12 +175,12 @@ class ImageViewer(tk.Tk):
         for index in selection:
             if index < len(self.points):
                 point = self.points[index]
-                self.canvas.create_oval(point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4, outline='blue', tags="highlight")
+                self.canvas.create_oval(point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4, outline='yellow', tags="highlight")
             else:
                 box_index = index - len(self.points)
                 if box_index < len(self.boxes):
                     box = self.boxes[box_index]
-                    self.canvas.create_rectangle(box[0], box[1], box[2], box[3], outline='blue', tags="highlight")
+                    self.canvas.create_rectangle(box[0], box[1], box[2], box[3], outline='yellow', tags="highlight")
 
     def check_annotation_click(self, x, y):
         for i, box in enumerate(self.boxes):
