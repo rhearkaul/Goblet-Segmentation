@@ -3,11 +3,13 @@ from tkinter import filedialog
 from PIL import ImageTk, Image
 import numpy as np
 import os
+from sam2 import sam_main
 
 class ImageViewer(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Image Viewer")
+        self.opened_image = None
 
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
@@ -28,6 +30,7 @@ class ImageViewer(tk.Tk):
         self.box_ids = []
 
         self.create_widgets(window_width, window_height)
+        self.create_menubar()
 
         self.rect_id = None
 
@@ -35,24 +38,6 @@ class ImageViewer(tk.Tk):
 
         toolbar_frame = tk.Frame(self, bg="gray")
         toolbar_frame.pack(side=tk.TOP, fill=tk.X)
-
-        open_button = tk.Button(toolbar_frame, text="Open", command=self.open_image)
-        open_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-        input_button = tk.Button(toolbar_frame, text="Step 1: Input")
-        input_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-        select_button = tk.Button(toolbar_frame, text="Step 2: Select")
-        select_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-        watershed_button = tk.Button(toolbar_frame, text="Step 3: Watershed")
-        watershed_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-        segmentation_button = tk.Button(toolbar_frame, text="Step 4: Segmentation")
-        segmentation_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-        analysis_button = tk.Button(toolbar_frame, text="Step 5: Analysis")
-        analysis_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         select_toolbar_frame = tk.Frame(self, bg="lightgray")
         select_toolbar_frame.pack(side=tk.TOP, fill=tk.X)
@@ -93,16 +78,44 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
 
+    def create_menubar(self):
+        menubar = tk.Menu(self)
+        self.config(menu=menubar)
+
+        menu1 = tk.Menu(menubar, tearoff=0)
+        menu2 = tk.Menu(menubar, tearoff=0)
+        menu3 = tk.Menu(menubar, tearoff=0)
+        menu4 = tk.Menu(menubar, tearoff=0)
+
+        menu1.add_command(label="Open Image", command=self.open_image)
+
+        menu2.add_command(label="Placeholder 2")
+        menu3.add_command(label="Placeholder 3")
+
+        menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
+        menu4.add_command(label="Run SAM with Selected Annotation", command=self.run_sam_with_selected_annotation)
+
+        menubar.add_cascade(label="File", menu=menu1)
+        menubar.add_cascade(label="Menu 2", menu=menu2)
+        menubar.add_cascade(label="Menu 3", menu=menu3)
+        menubar.add_cascade(label="Menu 4", menu=menu4)
+
     def open_image(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
-        if file_path:
-            self.opened_image = Image.open(file_path)
-            self.opened_image.thumbnail((600, 400))
-            photo = ImageTk.PhotoImage(self.opened_image)
-            self.canvas.delete("all")
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
+        image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
+        if image_path:
+            self.image_path = image_path
+            image = Image.open(image_path)
+            image.thumbnail((800, 600))
+            self.opened_image = image  # Assign the opened image to self.opened_image
+            photo = ImageTk.PhotoImage(image)
             self.canvas.image = photo
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
             self.clear_annotations()
+            print(f"Image opened: {image_path}")
+        else:
+            self.opened_image = None
+            self.canvas.delete("all")
+            print("No image selected.")
 
     def toggle_box_select_mode(self):
         if self.opened_image:
@@ -215,25 +228,24 @@ class ImageViewer(tk.Tk):
             self.update_annotation_listbox()
             self.canvas.delete("highlight")
 
-    def save_annotations(self):
-        annotation_file = filedialog.asksaveasfilename(defaultextension=".npz", filetypes=[("NumPy Files", "*.npz")])
-        if annotation_file:
+    def save_annotations(self, default_filename='annotations.npz'):
+        if self.opened_image:
             points_array = np.array(self.points)
             boxes_array = np.array(self.boxes)
-            np.savez(annotation_file, points=points_array, boxes=boxes_array)
-            print(f"Annotations saved to {annotation_file}")
+            np.savez(default_filename, points=points_array, boxes=boxes_array, image_path=self.image_path)
+            print(f"Annotations saved successfully as {default_filename}.")
+        else:
+            print("No image opened. Please open an image before saving annotations.")
 
     def clear_annotations(self):
         self.points = []
         self.boxes = []
-        self.point_ids = []
-        self.box_ids = []
         self.update_annotation_listbox()
-        self.canvas.delete("all")
-        if self.opened_image:
+        self.canvas.delete("annotation")
+        if self.opened_image is not None:
             photo = ImageTk.PhotoImage(self.opened_image)
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
             self.canvas.image = photo
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
 
     def loadAnnotations(self, annotation_file):
         # Load annotations from a given file
@@ -266,6 +278,20 @@ class ImageViewer(tk.Tk):
                 self.box_ids.append(rect_id)
         else:
             print(f"Annotation file {annotation_file} not found.")
+
+    def run_sam_with_current_annotation(self):
+        self.save_annotations(default_filename='current_annotations.npz')
+        path_to_weights = "sam_vit_h_4b8939.pth"
+        sam_main(path_to_weights, annotations_filename='current_annotations.npz')
+        print("SAM function executed with current annotation.")
+
+    def run_sam_with_selected_annotation(self):
+        annotation_file = filedialog.askopenfilename(filetypes=[("Annotation Files", "*.npz")])
+        if annotation_file:
+            path_to_weights = "sam_vit_h_4b8939.pth"
+            sam_main(path_to_weights, annotations_filename=annotation_file)
+            print("SAM function executed with selected annotation.")
+
 
 if __name__ == "__main__":
     app = ImageViewer()

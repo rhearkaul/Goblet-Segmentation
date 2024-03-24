@@ -63,8 +63,6 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
         print(f"Warning: Image could not be loaded.")
         return
 
-    show_mask()
-
     sam = SAModel()
     sam.load_weights(model_type=SAModelType.SAM_VIT_H, path_to_weights=path_to_weights)
     sam.set_image(image)
