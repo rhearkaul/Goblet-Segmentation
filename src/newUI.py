@@ -39,6 +39,11 @@ class ImageViewer(tk.Tk):
 
         self.canvas.mask_images = []
 
+        self.masks = []
+        self.mask_files = []
+        self.masks_dir = ""
+
+
     def create_widgets(self, window_width, window_height):
 
         toolbar_frame = tk.Frame(self, bg="gray")
@@ -182,13 +187,33 @@ class ImageViewer(tk.Tk):
     def update_annotation_listbox(self):
         self.annotation_listbox.delete(0, tk.END)
         for i, point in enumerate(self.points):
-            self.annotation_listbox.insert(tk.END, f"Point {i+1}: ({point[0]}, {point[1]})")
+            self.annotation_listbox.insert(tk.END, f"Point {i + 1}: ({point[0]}, {point[1]})")
         for i, box in enumerate(self.boxes):
-            self.annotation_listbox.insert(tk.END, f"Box {i+1}: ({box[0]}, {box[1]}, {box[2]}, {box[3]})")
+            self.annotation_listbox.insert(tk.END, f"Box {i + 1}: ({box[0]}, {box[1]}, {box[2]}, {box[3]})")
+        for i, mask_file in enumerate(self.mask_files):
+            self.annotation_listbox.insert(tk.END, f"Mask {i + 1}: {mask_file}")
 
     def on_annotation_select(self, event):
         selection = self.annotation_listbox.curselection()
         self.highlight_annotations(selection)
+
+        # Highlight the selected mask
+        if len(selection) == 1:
+            index = selection[0]
+            if index >= len(self.points) + len(self.boxes):
+                mask_index = index - len(self.points) - len(self.boxes)
+                self.highlight_mask(mask_index)
+            else:
+                self.clear_mask_highlight()
+
+    def highlight_mask(self, mask_index):
+        self.clear_mask_highlight()
+        self.canvas.itemconfig(f"mask_{mask_index}", state=tk.NORMAL)
+        self.canvas.tag_raise(f"mask_{mask_index}")
+
+    def clear_mask_highlight(self):
+        for i in range(len(self.mask_files)):
+            self.canvas.itemconfig(f"mask_{i}", state=tk.HIDDEN)
 
     def highlight_annotations(self, selection):
         self.canvas.delete("highlight")
@@ -215,7 +240,12 @@ class ImageViewer(tk.Tk):
                 self.annotation_listbox.selection_set(i)
                 self.highlight_annotations([i])
                 return
-
+        for i, mask in enumerate(self.masks):
+            if mask[y, x] > 0:
+                self.annotation_listbox.selection_clear(0, tk.END)
+                self.annotation_listbox.selection_set(len(self.points) + len(self.boxes) + i)
+                self.highlight_mask(i)
+                return
     def delete_selected_annotation(self):
         selection = self.annotation_listbox.curselection()
         if selection:
@@ -226,14 +256,23 @@ class ImageViewer(tk.Tk):
                     del self.points[index]
                     point_id = self.point_ids.pop(index)
                     self.canvas.delete(point_id)
-                else:
+                elif index < len(self.points) + len(self.boxes):
                     box_index = index - len(self.points)
                     if box_index < len(self.boxes):
                         del self.boxes[box_index]
                         box_id = self.box_ids.pop(box_index)
                         self.canvas.delete(box_id)
+                else:
+                    mask_index = index - len(self.points) - len(self.boxes)
+                    if mask_index < len(self.mask_files):
+                        mask_file = self.mask_files[mask_index]
+                        os.remove(os.path.join(self.masks_dir, mask_file))
+                        del self.masks[mask_index]
+                        del self.mask_files[mask_index]
+                        self.canvas.delete(f"mask_{mask_index}")
+
             self.update_annotation_listbox()
-            self.canvas.delete("highlight")
+            self.clear_mask_highlight()
 
     def save_annotations(self):
         if self.opened_image:
@@ -332,6 +371,11 @@ class ImageViewer(tk.Tk):
             mask_photo = ImageTk.PhotoImage(mask_image)
             self.canvas.mask_images.append(mask_photo)  # Keep a reference to the mask photo
             self.canvas.create_image(0, 0, anchor=tk.NW, image=mask_photo, tags=f"mask_{i}")
+
+        self.masks = masks
+        self.mask_files = mask_files
+        self.masks_dir = masks_dir
+        self.update_annotation_listbox()
 
     def load_image_with_masks(self, image_path, masks_dir):
         image = cv2.imread(image_path)
