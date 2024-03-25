@@ -98,6 +98,8 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
             show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
         plt.axis('off')
         plt.show()
+
+        return output_dir
     else:
         print("No points or boxes provided, or model did not predict any masks.")
 

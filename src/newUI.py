@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
+
+import cv2
 from PIL import ImageTk, Image
 import numpy as np
 import os
@@ -29,10 +31,13 @@ class ImageViewer(tk.Tk):
         self.point_ids = []
         self.box_ids = []
 
+
         self.create_widgets(window_width, window_height)
         self.create_menubar()
 
         self.rect_id = None
+
+        self.canvas.mask_images = []
 
     def create_widgets(self, window_width, window_height):
 
@@ -104,7 +109,9 @@ class ImageViewer(tk.Tk):
         image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
         if image_path:
             self.image_path = image_path
-            image = Image.open(image_path)
+            image = cv2.imread(image_path)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = Image.fromarray(image)
             image.thumbnail((800, 600))
             self.opened_image = image  # Assign the opened image to self.opened_image
             photo = ImageTk.PhotoImage(image)
@@ -294,15 +301,44 @@ class ImageViewer(tk.Tk):
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
         path_to_weights = "sam_vit_h_4b8939.pth"
-        sam_main(path_to_weights, annotations_filename='current_annotations.npz')
+        output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz')
         print("SAM function executed with current annotation.")
+        self.display_image_with_masks(output_dir)
 
     def run_sam_with_selected_annotation(self):
         annotation_file = filedialog.askopenfilename(filetypes=[("Annotation Files", "*.npz")])
         if annotation_file:
             path_to_weights = "sam_vit_h_4b8939.pth"
-            sam_main(path_to_weights, annotations_filename=annotation_file)
+            output_dir = sam_main(path_to_weights, annotations_filename=annotation_file)
             print("SAM function executed with selected annotation.")
+            self.display_image_with_masks(output_dir)
+
+    def display_image_with_masks(self, masks_dir):
+        image_path = os.path.join(masks_dir, 'predicted_image.png')
+        image, masks, mask_files = self.load_image_with_masks(image_path, masks_dir)
+
+        self.opened_image = Image.fromarray(image)
+        photo = ImageTk.PhotoImage(self.opened_image)
+        self.canvas.delete("all")
+        self.canvas.image = photo
+        self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
+
+        for i, mask in enumerate(masks):
+            mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
+            mask_rgba[..., :3] = [30, 144, 255]  # Blue color
+            mask_rgba[..., 3] = (mask > 0).astype(np.uint8) * 128  # Set alpha channel based on mask
+
+            mask_image = Image.fromarray(mask_rgba, mode='RGBA')
+            mask_photo = ImageTk.PhotoImage(mask_image)
+            self.canvas.mask_images.append(mask_photo)  # Keep a reference to the mask photo
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=mask_photo, tags=f"mask_{i}")
+
+    def load_image_with_masks(self, image_path, masks_dir):
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        mask_files = [mask for mask in os.listdir(masks_dir) if mask.startswith('mask_')]
+        masks = [cv2.imread(os.path.join(masks_dir, mask_file), 0) for mask_file in mask_files]
+        return image, masks, mask_files
 
 
 if __name__ == "__main__":
