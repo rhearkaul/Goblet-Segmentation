@@ -78,6 +78,9 @@ class ImageViewer(tk.Tk):
         save_button = tk.Button(self.annotation_window_frame, text="Save Annotations", command=self.save_annotations)
         save_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
+        unselect_button = tk.Button(self.annotation_window_frame, text="Unselect", command=self.unselect_annotation)
+        unselect_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+
         self.image_viewer_frame = tk.Frame(self, bg="white", width=image_display_width, height=image_display_height)
         self.image_viewer_frame.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.image_viewer_frame.pack_propagate(False)
@@ -205,6 +208,8 @@ class ImageViewer(tk.Tk):
                 self.highlight_mask(mask_index)
             else:
                 self.clear_mask_highlight()
+        else:
+            self.clear_mask_highlight()
 
     def highlight_mask(self, mask_index):
         self.clear_mask_highlight()
@@ -215,6 +220,10 @@ class ImageViewer(tk.Tk):
         for i in range(len(self.mask_files)):
             self.canvas.itemconfig(f"mask_{i}", state=tk.HIDDEN)
 
+    def unselect_annotation(self):
+        self.annotation_listbox.selection_clear(0, tk.END)
+        self.clear_mask_highlight()
+        self.canvas.delete("highlight")
     def highlight_annotations(self, selection):
         self.canvas.delete("highlight")
         for index in selection:
@@ -343,6 +352,7 @@ class ImageViewer(tk.Tk):
         output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz')
         print("SAM function executed with current annotation.")
         self.display_image_with_masks(output_dir)
+        self.clear_points_and_boxes()
 
     def run_sam_with_selected_annotation(self):
         annotation_file = filedialog.askopenfilename(filetypes=[("Annotation Files", "*.npz")])
@@ -351,6 +361,16 @@ class ImageViewer(tk.Tk):
             output_dir = sam_main(path_to_weights, annotations_filename=annotation_file)
             print("SAM function executed with selected annotation.")
             self.display_image_with_masks(output_dir)
+            self.clear_points_and_boxes()
+
+    def clear_points_and_boxes(self):
+        self.points = []
+        self.boxes = []
+        self.point_ids = []
+        self.box_ids = []
+        self.update_annotation_listbox()
+        self.canvas.delete("point")
+        self.canvas.delete("box")
 
     def display_image_with_masks(self, masks_dir):
         image_path = os.path.join(masks_dir, 'predicted_image.png')
