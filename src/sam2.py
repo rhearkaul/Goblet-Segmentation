@@ -38,21 +38,33 @@ def show_mask(mask, ax, random_color=False):
     ax.imshow(mask_image)
 
 def save_masks_and_ious(masks, iou_scores, image, output_dir):
-    # Save masks as images
+    # Get the existing mask files in the output directory
+    existing_mask_files = [f for f in os.listdir(output_dir) if f.startswith("mask_")]
+
+    # Find the maximum mask index from the existing files
+    if existing_mask_files:
+        max_index = max([int(f.split("_")[1].split(".")[0]) for f in existing_mask_files])
+        next_index = max_index + 1
+    else:
+        next_index = 0
+
+    # Save masks as images with unique names
     for i, mask in enumerate(masks):
-        plt.imsave(f'{output_dir}/mask_{i}.png', mask.cpu().numpy(), cmap='gray')
+        mask_file = f"mask_{next_index + i}.png"
+        plt.imsave(os.path.join(output_dir, mask_file), mask.cpu().numpy(), cmap='gray')
 
     # Save IOUs as a CSV
-    with open(f'{output_dir}/ious.csv', 'w', newline='') as csvfile:
+    with open(os.path.join(output_dir, 'ious.csv'), 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['Mask Index', 'IOU Score'])
+        if next_index == 0:
+            writer.writerow(['Mask Index', 'IOU Score'])
         for i, iou in enumerate(iou_scores):
-            writer.writerow([i, iou.item()])
+            writer.writerow([next_index + i, iou.item()])
 
     # Save the predicted image
-    plt.imsave(f'{output_dir}/predicted_image.png', image)
+    plt.imsave(os.path.join(output_dir, "predicted_image.png"), image)
 
-def sam_main(path_to_weights, annotations_filename='annotations.npz', image_name=""):
+def sam_main(path_to_weights, annotations_filename='annotations.npz', image_folder=""):
     points, boxes, image = load_annotations(filename=annotations_filename)
     input_pts = points.tolist()
     boxes = boxes.tolist()
@@ -87,8 +99,7 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz', image_name
     final_iou_scores = iou_scores + iou_scores2
 
     if final_masks:
-        output_dir = f'output_masks/{image_name}'
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir = image_folder
         save_masks_and_ious(final_masks, final_iou_scores, image, output_dir)
 
         plt.figure(figsize=(10, 10))
@@ -101,6 +112,7 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz', image_name
         return output_dir
     else:
         print("No points or boxes provided, or model did not predict any masks.")
+
 
 
 if __name__ == '__main__':
