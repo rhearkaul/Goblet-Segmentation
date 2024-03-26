@@ -42,6 +42,7 @@ class ImageViewer(tk.Tk):
         self.masks = []
         self.mask_files = []
         self.masks_dir = ""
+        self.image_name = ""
 
 
     def create_widgets(self, window_width, window_height):
@@ -117,21 +118,43 @@ class ImageViewer(tk.Tk):
         image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
         if image_path:
             self.image_path = image_path
+            self.image_name = os.path.splitext(os.path.basename(image_path))[0]
             image = cv2.imread(image_path)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(image)
             image.thumbnail((800, 600))
-            self.opened_image = image  # Assign the opened image to self.opened_image
+            self.opened_image = image
             photo = ImageTk.PhotoImage(image)
             self.canvas.image = photo
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
             self.clear_annotations()
+            self.load_existing_masks()
             print(f"Image opened: {image_path}")
         else:
             self.opened_image = None
             self.canvas.delete("all")
             print("No image selected.")
+    def load_existing_masks(self):
+        self.masks_dir = f"output_masks/{self.image_name}"
+        if os.path.exists(self.masks_dir):
+            mask_files = [f for f in os.listdir(self.masks_dir) if f.startswith("mask_")]
+            self.masks = [cv2.imread(os.path.join(self.masks_dir, mask_file), 0) for mask_file in mask_files]
+            self.mask_files = mask_files
+            self.display_masks()
+            self.update_annotation_listbox()
+        else:
+            self.masks = []
+            self.mask_files = []
+    def display_masks(self):
+        for i, mask in enumerate(self.masks):
+            mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
+            mask_rgba[..., :3] = [30, 144, 255]  # Blue color
+            mask_rgba[..., 3] = (mask > 0).astype(np.uint8) * 128  # Set alpha channel based on mask
 
+            mask_image = Image.fromarray(mask_rgba, mode='RGBA')
+            mask_photo = ImageTk.PhotoImage(mask_image)
+            self.canvas.mask_images.append(mask_photo)  # Keep a reference to the mask photo
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=mask_photo, tags=f"mask_{i}")
     def toggle_box_select_mode(self):
         if self.opened_image:
             self.box_select_mode = not self.box_select_mode
@@ -366,18 +389,18 @@ class ImageViewer(tk.Tk):
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
         path_to_weights = "sam_vit_h_4b8939.pth"
-        output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz')
+        output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz', image_name=self.image_name)
         print("SAM function executed with current annotation.")
-        self.display_image_with_masks(output_dir)
+        self.load_existing_masks()
         self.clear_points_and_boxes()
 
     def run_sam_with_selected_annotation(self):
         annotation_file = filedialog.askopenfilename(filetypes=[("Annotation Files", "*.npz")])
         if annotation_file:
             path_to_weights = "sam_vit_h_4b8939.pth"
-            output_dir = sam_main(path_to_weights, annotations_filename=annotation_file)
+            output_dir = sam_main(path_to_weights, annotations_filename=annotation_file, image_name=self.image_name)
             print("SAM function executed with selected annotation.")
-            self.display_image_with_masks(output_dir)
+            self.load_existing_masks()
             self.clear_points_and_boxes()
 
     def clear_points_and_boxes(self):

@@ -52,7 +52,7 @@ def save_masks_and_ious(masks, iou_scores, image, output_dir):
     # Save the predicted image
     plt.imsave(f'{output_dir}/predicted_image.png', image)
 
-def sam_main(path_to_weights, annotations_filename='annotations.npz'):
+def sam_main(path_to_weights, annotations_filename='annotations.npz', image_name=""):
     points, boxes, image = load_annotations(filename=annotations_filename)
     input_pts = points.tolist()
     boxes = boxes.tolist()
@@ -87,8 +87,7 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz'):
     final_iou_scores = iou_scores + iou_scores2
 
     if final_masks:
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        output_dir = f'output_masks/{timestamp}'
+        output_dir = f'output_masks/{image_name}'
         os.makedirs(output_dir, exist_ok=True)
         save_masks_and_ious(final_masks, final_iou_scores, image, output_dir)
 
