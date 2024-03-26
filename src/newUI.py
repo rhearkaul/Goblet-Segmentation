@@ -207,14 +207,27 @@ class ImageViewer(tk.Tk):
                 mask_index = index - len(self.points) - len(self.boxes)
                 self.highlight_mask(mask_index)
             else:
-                self.clear_mask_highlight()
+                self.highlight_mask(-1)  # Clear highlight if no mask is selected
         else:
-            self.clear_mask_highlight()
+            self.highlight_mask(-1)  # Clear highlight if multiple items are selected
 
     def highlight_mask(self, mask_index):
-        self.clear_mask_highlight()
-        self.canvas.itemconfig(f"mask_{mask_index}", state=tk.NORMAL)
-        self.canvas.tag_raise(f"mask_{mask_index}")
+        self.canvas.delete("highlight")  # Remove any existing highlight
+        if mask_index >= 0 and mask_index < len(self.masks):
+            mask = self.masks[mask_index]
+            highlight_mask = np.zeros_like(mask, dtype=np.uint8)
+            highlight_mask[mask > 0] = 255
+
+            # Create a transparent highlight overlay
+            highlight_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
+            highlight_rgba[..., :3] = [255, 255, 0]  # Yellow color
+            highlight_rgba[..., 3] = (highlight_mask > 0).astype(
+                np.uint8) * 128  # Set alpha channel based on highlight mask
+
+            highlight_image = Image.fromarray(highlight_rgba, mode='RGBA')
+            highlight_photo = ImageTk.PhotoImage(highlight_image)
+            self.canvas.highlight_image = highlight_photo  # Keep a reference to the highlight photo
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=highlight_photo, tags="highlight")
 
     def clear_mask_highlight(self):
         for i in range(len(self.mask_files)):
@@ -255,6 +268,8 @@ class ImageViewer(tk.Tk):
                 self.annotation_listbox.selection_set(len(self.points) + len(self.boxes) + i)
                 self.highlight_mask(i)
                 return
+
+        self.highlight_mask(-1)  # Clear highlight if no mask is clicked
     def delete_selected_annotation(self):
         selection = self.annotation_listbox.curselection()
         if selection:
