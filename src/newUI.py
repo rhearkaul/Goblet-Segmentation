@@ -235,8 +235,10 @@ class ImageViewer(tk.Tk):
 
     def unselect_annotation(self):
         self.annotation_listbox.selection_clear(0, tk.END)
-        self.clear_mask_highlight()
-        self.canvas.delete("highlight")
+        self.highlight_mask(-1)  # Clear the highlight
+        # Display all masks with the original blue color
+        for i in range(len(self.mask_files)):
+            self.canvas.itemconfig(f"mask_{i}", state=tk.NORMAL)
     def highlight_annotations(self, selection):
         self.canvas.delete("highlight")
         for index in selection:
