@@ -102,6 +102,7 @@ class ImageViewer(tk.Tk):
         menu2 = tk.Menu(menubar, tearoff=0)
         menu3 = tk.Menu(menubar, tearoff=0)
         menu4 = tk.Menu(menubar, tearoff=0)
+        menu5 = tk.Menu(menubar, tearoff=0)
 
         menu1.add_command(label="Open Image", command=self.open_image)
 
@@ -112,9 +113,10 @@ class ImageViewer(tk.Tk):
         menu4.add_command(label="Run SAM with Selected Annotation", command=self.run_sam_with_selected_annotation)
 
         menubar.add_cascade(label="File", menu=menu1)
-        menubar.add_cascade(label="Menu 2", menu=menu2)
-        menubar.add_cascade(label="Menu 3", menu=menu3)
-        menubar.add_cascade(label="Menu 4", menu=menu4)
+        menubar.add_cascade(label="Select", menu=menu2)
+        menubar.add_cascade(label="WaterShed", menu=menu3)
+        menubar.add_cascade(label="SAM", menu=menu4)
+        menubar.add_cascade(label="Metric", menu=menu5)
 
     def open_image(self):
         image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
