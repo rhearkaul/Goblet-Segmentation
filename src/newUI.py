@@ -157,6 +157,15 @@ class ImageViewer(tk.Tk):
             self.mask_files.append(mask_file)
         self.display_masks()
         self.update_annotation_listbox()
+
+    def create_loading_screen(self):
+        self.loading_screen = tk.Toplevel(self)
+        self.loading_screen.title("Loading")
+        self.loading_screen.geometry("200x100")
+        self.loading_screen.resizable(False, False)
+
+        label = tk.Label(self.loading_screen, text="Running SAM, Please Wait.")
+        label.pack(pady=20)
     def load_existing_masks(self):
         self.masks_dir = f"output_masks/{self.image_name}"
         self.masks = []
@@ -429,8 +438,16 @@ class ImageViewer(tk.Tk):
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
         path_to_weights = "sam_vit_h_4b8939.pth"
-        output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz', image_folder=self.image_folder)
+
+        self.create_loading_screen()
+        self.update()
+
+        output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz',
+                              image_folder=self.image_folder)
         print("SAM function executed with current annotation.")
+
+        self.loading_screen.destroy()
+
         self.load_masks()
         self.clear_points_and_boxes()
 
