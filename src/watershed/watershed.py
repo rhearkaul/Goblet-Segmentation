@@ -139,7 +139,7 @@ REGION_PROP_KEYS = (
 
 def generate_centroid(
     image,
-    bin_mask,
+    bin_img,
     stain_vector,
     equalization_bins,
     intensity_thresh,
