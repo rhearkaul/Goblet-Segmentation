@@ -333,34 +333,46 @@ class ImageViewer(tk.Tk):
                 return
 
         self.highlight_mask(-1)  # Clear highlight if no mask is clicked
+
     def delete_selected_annotation(self):
         selection = self.annotation_listbox.curselection()
         if selection:
             indices = list(selection)
-            indices.sort(reverse=True)
+            indices.sort(reverse=True)  # Delete from the end to avoid shifting indices
             for index in indices:
                 if index < len(self.points):
+                    # Deleting a point annotation
                     del self.points[index]
                     point_id = self.point_ids.pop(index)
                     self.canvas.delete(point_id)
                 elif index < len(self.points) + len(self.boxes):
+                    # Deleting a box annotation
                     box_index = index - len(self.points)
                     if box_index < len(self.boxes):
                         del self.boxes[box_index]
                         box_id = self.box_ids.pop(box_index)
                         self.canvas.delete(box_id)
                 else:
+                    # Deleting a mask annotation
                     mask_index = index - len(self.points) - len(self.boxes)
                     if mask_index < len(self.mask_files):
                         mask_file = self.mask_files[mask_index]
-                        os.remove(os.path.join(self.masks_dir, mask_file))
+                        mask_file_path = os.path.join(self.masks_dir, mask_file)
+                        if os.path.exists(mask_file_path):
+                            os.remove(mask_file_path)  # Delete the mask file
                         del self.masks[mask_index]
                         del self.mask_files[mask_index]
+                        # Remove the mask from the canvas using its tag
                         self.canvas.delete(f"mask_{mask_index}")
+                        # Adjust the tags of the remaining masks to reflect the new indexing
+                        self.retag_masks_after_deletion(mask_index)
 
             self.update_annotation_listbox()
             self.clear_mask_highlight()
 
+    def retag_masks_after_deletion(self, deleted_mask_index):
+        for i in range(deleted_mask_index, len(self.masks)):
+            self.canvas.itemconfig(f"mask_{i + 1}", tags=f"mask_{i}")
     def save_annotations(self):
         if self.opened_image:
             file_path = filedialog.asksaveasfilename(defaultextension=".npz", filetypes=[("Numpy Files", "*.npz")])
