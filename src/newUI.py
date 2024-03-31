@@ -75,7 +75,7 @@ class ImageViewer(tk.Tk):
         self.annotation_listbox.pack(fill=tk.BOTH, expand=True)
         self.annotation_listbox.bind("<<ListboxSelect>>", self.on_annotation_select)
 
-        delete_button = tk.Button(self.annotation_window_frame, text="Delete Selected Annotation", command=self.delete_selected_annotation)
+        delete_button = tk.Button(self.annotation_window_frame, text="Delete Annotation", command=self.delete_selected_annotation)
         delete_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
         save_button = tk.Button(self.annotation_window_frame, text="Save Annotations", command=self.save_annotations)
@@ -246,6 +246,7 @@ class ImageViewer(tk.Tk):
             y2 = max(self.start_y, event.y)
             self.boxes.append((x1, y1, x2, y2))
             self.box_ids.append(self.rect_id)
+            self.rect_id = None  # Reset rect_id after appending it to box_ids
             self.update_annotation_listbox()
 
     def update_annotation_listbox(self):
@@ -454,13 +455,15 @@ class ImageViewer(tk.Tk):
             self.clear_points_and_boxes()
 
     def clear_points_and_boxes(self):
+        for point_id in self.point_ids:
+            self.canvas.delete(point_id)
+        for box_id in self.box_ids:
+            self.canvas.delete(box_id)
         self.points = []
         self.boxes = []
         self.point_ids = []
         self.box_ids = []
         self.update_annotation_listbox()
-        self.canvas.delete("point")
-        self.canvas.delete("box")
 
     def display_image_with_masks(self, masks_dir):
         image_path = os.path.join(masks_dir, 'predicted_image.png')
