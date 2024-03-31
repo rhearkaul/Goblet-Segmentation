@@ -78,8 +78,8 @@ class ImageViewer(tk.Tk):
         delete_button = tk.Button(self.annotation_window_frame, text="Delete Annotation", command=self.delete_selected_annotation)
         delete_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
-        save_button = tk.Button(self.annotation_window_frame, text="Save Annotations", command=self.save_annotations)
-        save_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+        # save_button = tk.Button(self.annotation_window_frame, text="Save Annotations", command=self.save_annotations)
+        # save_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
         unselect_button = tk.Button(self.annotation_window_frame, text="Unselect", command=self.unselect_annotation)
         unselect_button.pack(side=tk.BOTTOM, padx=5, pady=5)
@@ -110,7 +110,6 @@ class ImageViewer(tk.Tk):
         menu3.add_command(label="Placeholder 3")
 
         menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
-        menu4.add_command(label="Run SAM with Selected Annotation", command=self.run_sam_with_selected_annotation)
 
         menubar.add_cascade(label="File", menu=menu1)
         menubar.add_cascade(label="Select", menu=menu2)
@@ -374,16 +373,6 @@ class ImageViewer(tk.Tk):
     def retag_masks_after_deletion(self, deleted_mask_index):
         for i in range(deleted_mask_index, len(self.masks)):
             self.canvas.itemconfig(f"mask_{i + 1}", tags=f"mask_{i}")
-    def save_annotations(self):
-        if self.opened_image:
-            file_path = filedialog.asksaveasfilename(defaultextension=".npz", filetypes=[("Numpy Files", "*.npz")])
-            if file_path:
-                points_array = np.array(self.points)
-                boxes_array = np.array(self.boxes)
-                np.savez(file_path, points=points_array, boxes=boxes_array, image_path=self.image_path)
-                print(f"Annotations saved successfully as {file_path}.")
-        else:
-            print("No image opened. Please open an image before saving annotations.")
 
     def save_current_annotations(self):
         if self.opened_image:
@@ -444,15 +433,6 @@ class ImageViewer(tk.Tk):
         print("SAM function executed with current annotation.")
         self.load_masks()
         self.clear_points_and_boxes()
-
-    def run_sam_with_selected_annotation(self):
-        annotation_file = filedialog.askopenfilename(filetypes=[("Annotation Files", "*.npz")])
-        if annotation_file:
-            path_to_weights = "sam_vit_h_4b8939.pth"
-            output_dir = sam_main(path_to_weights, annotations_filename=annotation_file, image_folder=self.image_folder)
-            print("SAM function executed with selected annotation.")
-            self.load_masks()
-            self.clear_points_and_boxes()
 
     def clear_points_and_boxes(self):
         for point_id in self.point_ids:
