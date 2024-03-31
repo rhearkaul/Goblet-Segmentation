@@ -8,6 +8,7 @@ from PIL import ImageTk, Image
 import numpy as np
 import os
 from sam2 import sam_main
+from metrics import get_prop, analyze_properties
 
 class ImageViewer(tk.Tk):
     def __init__(self):
@@ -108,6 +109,7 @@ class ImageViewer(tk.Tk):
 
         menu2.add_command(label="Placeholder 2")
         menu3.add_command(label="Placeholder 3")
+        menu5.add_command(label="Run Analysis", command=self.run_analysis)
 
         menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
 
@@ -193,9 +195,10 @@ class ImageViewer(tk.Tk):
 
     def display_masks(self):
         for i, mask in enumerate(self.masks):
+            binary_mask = mask > 0
             mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
             mask_rgba[..., :3] = [30, 144, 255]  # Blue color
-            mask_rgba[..., 3] = (mask > 0).astype(np.uint8) * 128  # Set alpha channel based on mask
+            mask_rgba[..., 3] = binary_mask.astype(np.uint8) * 128  # Set alpha channel based on mask
 
             mask_image = Image.fromarray(mask_rgba, mode='RGBA')
             mask_photo = ImageTk.PhotoImage(mask_image)
@@ -493,6 +496,30 @@ class ImageViewer(tk.Tk):
         mask_files = [mask for mask in os.listdir(masks_dir) if mask.startswith('mask_')]
         masks = [cv2.imread(os.path.join(masks_dir, mask_file), 0) for mask_file in mask_files]
         return image, masks, mask_files
+
+    def run_analysis(self):
+        if not self.masks:
+            print("No masks found. Please run SAM first.")
+            return
+
+        binary_masks = [mask > 0 for mask in self.masks]
+
+        res_x, res_y = self.opened_image.info.get("resolution", (None, None))
+        if not res_x or not res_y:
+            res_x = res_y = 1  # Set a default resolution if not available
+
+        results = []
+        for binary_mask in binary_masks:
+            prop_df = get_prop(binary_mask)
+            if not prop_df.empty:
+                result = analyze_properties(prop_df, res_x)
+                results.append(result)
+
+        print("Analysis Results:")
+        for i, result in enumerate(results):
+            print(f"Mask {i + 1}:")
+            print(result)
+            print()
 
 
 if __name__ == "__main__":

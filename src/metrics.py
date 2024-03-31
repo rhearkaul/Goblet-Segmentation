@@ -65,9 +65,12 @@ def get_prop(binary_mask: list, properties: list = PROPERTIES):
     props = regionprops_table(labels, properties=properties)
     df = pd.DataFrame(props)
 
-    # Return the largest mask in case of artefacts
-    i_max = df["area"].idxmax()
-    return df.loc(i_max)
+    # Return the largest mask in case of artifacts
+    if not df.empty:
+        i_max = df["area"].idxmax()
+        return df.loc[i_max]
+    else:
+        return pd.Series()
 
 
 def analyze_properties(property_df: pd.DataFrame, resolution: float):
