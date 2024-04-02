@@ -171,7 +171,11 @@ class ImageViewer(tk.Tk):
     def load_masks(self):
         self.masks = []
         self.mask_files = []
-        mask_files = sorted([f for f in os.listdir(self.image_folder) if f.startswith("mask_")])
+        all_files = [f for f in os.listdir(self.image_folder) if f.endswith(".png")]
+        mask_files = [f for f in all_files if
+                      not f.startswith(self.image_name) and not f.startswith("predicted_") and not f.startswith(
+                          "mask_")]
+        mask_files = sorted(mask_files, key=lambda x: os.path.getmtime(os.path.join(self.image_folder, x)))
         for mask_file in mask_files:
             mask_path = os.path.join(self.image_folder, mask_file)
             mask = cv2.imread(mask_path, 0)
@@ -343,8 +347,10 @@ class ImageViewer(tk.Tk):
         manual_mask_polygon = np.array(self.manual_mask_path, dtype=np.int32)
         cv2.polylines(mask, [manual_mask_polygon], False, 255, thickness=self.brush_size)
 
-        # Save the manual mask to the image folder
-        mask_file = f"mask_{len(self.mask_files)}.png"
+        # Save the manual mask to the image folder with a timestamp
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
+        mask_index = len(self.mask_files)
+        mask_file = f"manual_mask_{timestamp}_{mask_index}.png"
         mask_path = os.path.join(self.image_folder, mask_file)
         cv2.imwrite(mask_path, mask)
 
@@ -354,14 +360,11 @@ class ImageViewer(tk.Tk):
         self.update_annotation_listbox()
         self.manual_mask_path = []
         self.canvas.delete("manual_mask")
+
     def update_annotation_listbox(self):
         self.annotation_listbox.delete(0, tk.END)
-        for i, point in enumerate(self.points):
-            self.annotation_listbox.insert(tk.END, f"Point {i + 1}: ({point[0]}, {point[1]})")
-        for i, box in enumerate(self.boxes):
-            self.annotation_listbox.insert(tk.END, f"Box {i + 1}: ({box[0]}, {box[1]}, {box[2]}, {box[3]})")
-        for i, mask_file in enumerate(self.mask_files):
-            self.annotation_listbox.insert(tk.END, f"Mask {i + 1}: {mask_file}")
+        for mask_file in self.mask_files:
+            self.annotation_listbox.insert(tk.END, mask_file)
 
     def on_annotation_select(self, event):
         selection = self.annotation_listbox.curselection()
@@ -476,6 +479,9 @@ class ImageViewer(tk.Tk):
             self.update_annotation_listbox()
             self.clear_mask_highlight()
 
+            # Reload all masks in the folder
+            self.load_masks()
+
     def retag_masks_after_deletion(self, deleted_mask_index):
         for i in range(deleted_mask_index, len(self.masks)):
             self.canvas.itemconfig(f"mask_{i + 1}", tags=f"mask_{i}")
@@ -544,6 +550,18 @@ class ImageViewer(tk.Tk):
         print("SAM function executed with current annotation.")
 
         self.loading_screen.destroy()
+
+        # Save SAM-generated masks with a timestamp
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
+        mask_files = [f for f in os.listdir(output_dir) if f.startswith("mask_")]
+        for i, mask_file in enumerate(mask_files):
+            src_path = os.path.join(output_dir, mask_file)
+            dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
+            shutil.copy2(src_path, dst_path)
+
+        # Remove the original "mask_*.png" files
+        for mask_file in mask_files:
+            os.remove(os.path.join(output_dir, mask_file))
 
         self.load_masks()
         self.clear_points_and_boxes()
