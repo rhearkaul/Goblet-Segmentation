@@ -175,10 +175,9 @@ class ImageViewer(tk.Tk):
         stain_vector_label = tk.Label(watershed_settings_window, text="Stain Vector:")
         stain_vector_label.pack()
         stain_vector_var = tk.IntVar()
-        stain_vector_var.set(0)  # Set the initial value to the first option
-        stain_vector_options = list(STAIN_VECTORS.keys())
-        stain_vector_dropdown = tk.OptionMenu(watershed_settings_window, stain_vector_var, *stain_vector_options)
-        stain_vector_dropdown.pack()
+        stain_vector_var.set(0)  # Set the initial value
+        stain_vector_entry = tk.Entry(watershed_settings_window, textvariable=stain_vector_var)
+        stain_vector_entry.pack()
 
         # Create equalization bins input
         equalization_bins_label = tk.Label(watershed_settings_window, text="Equalization Bins:")
@@ -222,14 +221,18 @@ class ImageViewer(tk.Tk):
 
         # Create save button
         def save_settings():
-            self.watershed_settings = {
-                "stain_vector": stain_vector_var.get(),
-                "equalization_bins": equalization_bins_var.get(),
-                "intensity_thresh": tuple(map(float, intensity_thresh_var.get().split(","))),
-                "size_thresh": tuple(map(int, size_thresh_var.get().split(","))),
-                "max_aspect_ratio": max_aspect_ratio_var.get(),
-                "min_solidity": min_solidity_var.get(),
-            }
+            stain_vector_index = stain_vector_var.get()
+            if stain_vector_index in STAIN_VECTORS:
+                self.watershed_settings = {
+                    "stain_vector": stain_vector_index,
+                    "equalization_bins": equalization_bins_var.get(),
+                    "intensity_thresh": tuple(map(float, intensity_thresh_var.get().split(","))),
+                    "size_thresh": tuple(map(int, size_thresh_var.get().split(","))),
+                    "max_aspect_ratio": max_aspect_ratio_var.get(),
+                    "min_solidity": min_solidity_var.get(),
+                }
+            else:
+                print(f"Invalid stain vector index: {stain_vector_index}")
 
         save_button = tk.Button(watershed_settings_window, text="Save", command=save_settings)
         save_button.pack(pady=10)
@@ -254,9 +257,10 @@ class ImageViewer(tk.Tk):
             self.clear_points_and_boxes()
 
             # Add centroid coordinates as point annotations
-            for y, x in centroid_coords:  # Swap x and y
+            for coord in centroid_coords:
+                x, y = coord
                 oval_id = self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill='red')
-                self.points.append((x, y))  # Swap x and y
+                self.points.append((x, y))
                 self.point_ids.append(oval_id)
 
             self.update_annotation_listbox()
