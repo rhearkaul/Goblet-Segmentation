@@ -33,7 +33,10 @@ class ImageViewer(tk.Tk):
         self.boxes = []
         self.point_ids = []
         self.box_ids = []
-        self.brush_size = 2  # Default brush size
+        self.brush_size = 10  # Default brush size
+
+        self.sam_model_size = "H"
+        self.sam_weights_path = "sam_vit_h_4b8939.pth"
 
 
         self.create_widgets(window_width, window_height)
@@ -49,6 +52,8 @@ class ImageViewer(tk.Tk):
         self.image_name = ""
 
         self.manual_mask_mode = None
+
+
 
 
 
@@ -130,13 +135,48 @@ class ImageViewer(tk.Tk):
         menu3.add_command(label="Placeholder 3")
         menu5.add_command(label="Run Analysis", command=self.run_analysis)
 
+        menu4 = tk.Menu(menubar, tearoff=0)
         menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
+        menu4.add_command(label="SAM Settings", command=self.show_sam_settings)
+
 
         menubar.add_cascade(label="File", menu=menu1)
         menubar.add_cascade(label="View", menu=menu2)
         menubar.add_cascade(label="WaterShed", menu=menu3)
         menubar.add_cascade(label="SAM", menu=menu4)
         menubar.add_cascade(label="Metric", menu=menu5)
+
+    def show_sam_settings(self):
+        sam_settings_window = tk.Toplevel(self)
+        sam_settings_window.title("SAM Settings")
+
+        # Create model size input
+        model_size_label = tk.Label(sam_settings_window, text="Model Size:")
+        model_size_label.pack()
+        model_size_var = tk.StringVar()
+        model_size_var.set(self.sam_model_size)  # Set the initial value from the instance variable
+        model_size_entry = tk.Entry(sam_settings_window, textvariable=model_size_var)
+        model_size_entry.pack()
+
+        # Create path to weights input
+        weights_path_label = tk.Label(sam_settings_window, text="Path to Weights:")
+        weights_path_label.pack()
+        weights_path_var = tk.StringVar()
+        weights_path_var.set(self.sam_weights_path)  # Set the initial value from the instance variable
+        weights_path_entry = tk.Entry(sam_settings_window, textvariable=weights_path_var)
+        weights_path_entry.pack()
+
+        # Create save button
+        def save_settings():
+            self.sam_model_size = model_size_var.get()
+            self.sam_weights_path = weights_path_var.get()
+            model_size_var.set(self.sam_model_size)  # Update the displayed value
+            weights_path_var.set(self.sam_weights_path)  # Update the displayed value
+
+        save_button = tk.Button(sam_settings_window, text="Save", command=save_settings)
+        save_button.pack(pady=10)
+
+        sam_settings_window.mainloop()
 
     def open_image(self):
         image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
@@ -540,13 +580,13 @@ class ImageViewer(tk.Tk):
 
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
-        path_to_weights = "sam_vit_h_4b8939.pth"
+        path_to_weights = self.sam_weights_path
 
         self.create_loading_screen()
         self.update()
 
         output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz',
-                              image_folder=self.image_folder)
+                              image_folder=self.image_folder, model_size=self.sam_model_size)
         print("SAM function executed with current annotation.")
 
         self.loading_screen.destroy()
