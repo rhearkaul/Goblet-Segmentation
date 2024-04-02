@@ -133,7 +133,7 @@ class ImageViewer(tk.Tk):
         menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
 
         menubar.add_cascade(label="File", menu=menu1)
-        menubar.add_cascade(label="Select", menu=menu2)
+        menubar.add_cascade(label="View", menu=menu2)
         menubar.add_cascade(label="WaterShed", menu=menu3)
         menubar.add_cascade(label="SAM", menu=menu4)
         menubar.add_cascade(label="Metric", menu=menu5)
