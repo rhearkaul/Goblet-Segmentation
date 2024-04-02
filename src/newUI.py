@@ -159,6 +159,7 @@ class ImageViewer(tk.Tk):
             self.opened_image = None
             self.canvas.delete("all")
             print("No image selected.")
+
     def create_unique_image_folder(self):
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         self.image_folder = f"image_masks/{self.image_name}_{timestamp}"
@@ -462,7 +463,7 @@ class ImageViewer(tk.Tk):
                     mask_index = index - len(self.points) - len(self.boxes)
                     if mask_index < len(self.mask_files):
                         mask_file = self.mask_files[mask_index]
-                        mask_file_path = os.path.join(self.masks_dir, mask_file)
+                        mask_file_path = os.path.join(self.image_folder, mask_file)
                         if os.path.exists(mask_file_path):
                             os.remove(mask_file_path)  # Delete the mask file
                         del self.masks[mask_index]
