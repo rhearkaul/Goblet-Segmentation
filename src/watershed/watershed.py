@@ -65,7 +65,9 @@ def _threshold_and_binarize(
     image, intensity_thresh=(0.75, 0.85), size_thresh=(100, 2500)
 ):
     """Performs thresholding on the image."""
-    adjusted_image = exposure.rescale_intensity(image, in_range=intensity_thresh)
+    adjusted_image = exposure.rescale_intensity(
+        image, in_range=intensity_thresh
+    ).astype(np.uint8)
 
     bin_thresh = threshold_otsu(adjusted_image)
     filled_img = binary_fill_holes(adjusted_image > bin_thresh)
@@ -123,7 +125,9 @@ def _filter_img(
 
 
 def _consolidate_duplicate_prompts(props, distance_thresh):
-    """Consolidates the prompts by averaging nearby thresholds."""
+    """Consolidates the prompts by averaging nearby thresholds.
+    Unused due to inefficient and unstable implementation.
+    """
     merged_centroids = []
     merged = np.zeros(len(props), dtype=bool)
 
@@ -144,9 +148,9 @@ def _consolidate_duplicate_prompts(props, distance_thresh):
 
         if len(idx_nearby) > 0:
             # Obtain mean centroid
-            nearby_centroids = np.array([centroid[idx] for idx in idx_nearby])
-            merged_centroids = np.vstack((centroid, nearby_centroids))
-            mean_centroid = np.mean(merged_centroids, axis=0)
+            nearby_centroids = np.array([props[idx].centroid for idx in idx_nearby])
+            centroids = np.vstack((centroid, nearby_centroids))
+            mean_centroid = np.mean(centroids, axis=0)
 
             merged[idx_nearby] = True
         else:
@@ -195,7 +199,7 @@ def generate_centroid(
     max_aspect_ratio: float,
     min_solidity: float,
     min_area: float,
-    distance_thresh: float,
+    # distance_thresh: float,
 ):
     """Generates the centroid locations given an image.
 
@@ -259,10 +263,13 @@ def generate_centroid(
 
     # Generate promps from watershed
     segmented_img, distances = _watershed(filtered_img)
+
+    segmented_img = binary_fill_holes(segmented_img)
+
     labels = label(segmented_img)
     props = regionprops(labels)
 
-    centroid_coords = _consolidate_duplicate_prompts(props, distance_thresh)
-    # centroid_coords = np.array([prop.centroid for prop in props]).astype(int)
+    # centroid_coords = _consolidate_duplicate_prompts(props, distance_thresh)[::-1]
+    centroid_coords = np.array([prop.centroid[::-1] for prop in props]).astype(int)
 
     return centroid_coords, deconv_img, segmented_img, distances
