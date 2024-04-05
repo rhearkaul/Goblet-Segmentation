@@ -205,7 +205,7 @@ class ImageViewer(tk.Tk):
         size_thresh_label = tk.Label(watershed_settings_window, text="Size Threshold:")
         size_thresh_label.pack()
         size_thresh_var = tk.StringVar()
-        size_thresh_var.set(",".join(map(str, SIZE_THRESHOLDS[0])))  # Set the initial value
+        size_thresh_var.set(",".join(map(str, SIZE_THRESHOLDS[2])))  # Set the initial value
         size_thresh_entry = tk.Entry(watershed_settings_window, textvariable=size_thresh_var)
         size_thresh_entry.pack()
 
@@ -248,8 +248,8 @@ class ImageViewer(tk.Tk):
                 self.watershed_settings = {
                     "stain_vector": stain_vector_index,
                     "equalization_bins": equalization_bins_var.get(),
-                    "intensity_thresh": tuple(map(int, intensity_thresh_var.get().split(","))), # Todo - make int
-                    "size_thresh": tuple(map(int, size_thresh_var.get().split(","))),
+                    "intensity_thresh": tuple(map(float, intensity_thresh_var.get().split(","))),
+                    "size_thresh": tuple(map(float, size_thresh_var.get().split(","))),
                     "max_aspect_ratio": max_aspect_ratio_var.get(),
                     "min_solidity": min_solidity_var.get(),
                     "min_area": min_area_var.get(),
