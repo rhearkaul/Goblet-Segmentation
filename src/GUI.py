@@ -54,6 +54,9 @@ class ImageViewer(tk.Tk):
             "min_solidity": 0.55,
         }
 
+        self.drag_mode = False
+        self.drag_start_x = None
+        self.drag_start_y = None
         self.create_widgets(window_width, window_height)
         self.create_menubar()
 
@@ -67,6 +70,8 @@ class ImageViewer(tk.Tk):
         self.image_name = ""
 
         self.manual_mask_mode = None
+
+
 
     def create_widgets(self, window_width, window_height):
 
@@ -85,7 +90,8 @@ class ImageViewer(tk.Tk):
         self.manual_mask_button = tk.Button(select_toolbar_frame, text="Manual Mask",
                                             command=self.toggle_manual_mask_mode)
         self.manual_mask_button.pack(side=tk.LEFT, padx=5, pady=5)
-
+        self.drag_button = tk.Button(select_toolbar_frame, text="Drag", command=self.toggle_drag_mode)
+        self.drag_button.pack(side=tk.LEFT, padx=5, pady=5)
         # Calculate the sizes of function window and image display area
         function_window_width = int(window_width * 0.2)
         function_window_height = window_height - 80
@@ -119,6 +125,23 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
 
+    def toggle_drag_mode(self):
+        if self.opened_image:
+            self.drag_mode = not self.drag_mode
+            self.box_select_mode = False
+            self.point_select_mode = False
+            self.manual_mask_mode = False
+            if self.drag_mode:
+                self.drag_button.configure(bg="lightblue")
+                self.box_select_button.configure(bg="lightgray")
+                self.point_select_button.configure(bg="lightgray")
+                self.manual_mask_button.configure(bg="lightgray")
+                self.canvas.config(cursor="hand2")
+            else:
+                self.drag_button.configure(bg="lightgray")
+                self.canvas.config(cursor="")
+        else:
+            print("No image opened. Please open an image first.")
     def update_brush_size(self, value):
         self.brush_size = int(value)
     def create_menubar(self):
@@ -443,6 +466,9 @@ class ImageViewer(tk.Tk):
 
     def on_canvas_click(self, event):
         if self.opened_image:
+            if self.drag_mode:
+                self.drag_start_x = event.x
+                self.drag_start_y = event.y
             if self.manual_mask_mode:
                 self.manual_mask_start_x = event.x
                 self.manual_mask_start_y = event.y
@@ -462,6 +488,12 @@ class ImageViewer(tk.Tk):
 
     def on_canvas_drag(self, event):
         if self.opened_image:
+            if self.drag_mode:
+                delta_x = event.x - self.drag_start_x
+                delta_y = event.y - self.drag_start_y
+                self.canvas.move("all", delta_x, delta_y)
+                self.drag_start_x = event.x
+                self.drag_start_y = event.y
             if self.box_select_mode:
                 if self.rect_id:
                     self.canvas.delete(self.rect_id)
@@ -473,6 +505,10 @@ class ImageViewer(tk.Tk):
 
     def on_canvas_release(self, event):
         if self.opened_image:
+            if self.drag_mode:
+                delta_x = event.x - self.drag_start_x
+                delta_y = event.y - self.drag_start_y
+                self.canvas.move("all", delta_x, delta_y)
             if self.manual_mask_mode:
                 self.manual_mask_path.append((event.x, event.y))
                 self.create_manual_mask()
