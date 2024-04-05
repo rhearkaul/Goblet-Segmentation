@@ -73,6 +73,7 @@ class ImageViewer(tk.Tk):
         self.drag_coefficient_x = 0
         self.drag_coefficient_y = 0
 
+        self.multi_select_mode = False
 
     def create_widgets(self, window_width, window_height):
 
@@ -116,6 +117,10 @@ class ImageViewer(tk.Tk):
         unselect_button = tk.Button(self.annotation_window_frame, text="Unselect", command=self.unselect_annotation)
         unselect_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
+        multi_select_button = tk.Button(self.annotation_window_frame, text="Multi Select",
+                                        command=self.toggle_multi_select_mode)
+        multi_select_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+
         self.image_viewer_frame = tk.Frame(self, bg="white", width=image_display_width, height=image_display_height)
         self.image_viewer_frame.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.image_viewer_frame.pack_propagate(False)
@@ -125,6 +130,13 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+
+    def toggle_multi_select_mode(self):
+        self.multi_select_mode = not self.multi_select_mode
+        if self.multi_select_mode:
+            self.annotation_listbox.config(selectmode=tk.EXTENDED)
+        else:
+            self.annotation_listbox.config(selectmode=tk.BROWSE)
 
     def toggle_drag_mode(self):
         if self.opened_image:
@@ -575,19 +587,22 @@ class ImageViewer(tk.Tk):
 
     def on_annotation_select(self, event):
         selection = self.annotation_listbox.curselection()
-        self.highlight_annotations(selection)
-        # Highlight the selected mask
-        if len(selection) == 1:
-            index = selection[0]
-            if index < len(self.points):
-                self.highlight_point(index)
-            elif index < len(self.points) + len(self.boxes):
-                self.highlight_box(index - len(self.points))
-            else:
-                mask_index = index - len(self.points) - len(self.boxes)
-                self.highlight_mask(mask_index)
+        if self.multi_select_mode:
+            self.highlight_annotations(selection)
         else:
-            self.highlight_mask(-1)  # Clear highlight if multiple items are selected
+            self.highlight_annotations(selection)
+            # Highlight the selected mask
+            if len(selection) == 1:
+                index = selection[0]
+                if index < len(self.points):
+                    self.highlight_point(index)
+                elif index < len(self.points) + len(self.boxes):
+                    self.highlight_box(index - len(self.points))
+                else:
+                    mask_index = index - len(self.points) - len(self.boxes)
+                    self.highlight_mask(mask_index)
+            else:
+                self.highlight_mask(-1)  # Clear highlight if multiple items are selected
 
     def highlight_point(self, point_index):
         self.canvas.delete("highlight")  # Remove any existing highlight
@@ -633,12 +648,14 @@ class ImageViewer(tk.Tk):
         # Display all masks with the original blue color
         for i in range(len(self.mask_files)):
             self.canvas.itemconfig(f"mask_{i}", state=tk.NORMAL)
+
     def highlight_annotations(self, selection):
         self.canvas.delete("highlight")
         for index in selection:
             if index < len(self.points):
                 point = self.points[index]
-                self.canvas.create_oval(point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4, outline='yellow', tags="highlight")
+                self.canvas.create_oval(point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4, outline='yellow',
+                                        tags="highlight")
             else:
                 box_index = index - len(self.points)
                 if box_index < len(self.boxes):
@@ -646,26 +663,37 @@ class ImageViewer(tk.Tk):
                     self.canvas.create_rectangle(box[0], box[1], box[2], box[3], outline='yellow', tags="highlight")
 
     def check_annotation_click(self, x, y):
-        for i, box in enumerate(self.boxes):
-            if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
-                self.annotation_listbox.selection_clear(0, tk.END)
-                self.annotation_listbox.selection_set(len(self.points) + i)
-                self.highlight_annotations([len(self.points) + i])
-                return
-        for i, point in enumerate(self.points):
-            if abs(point[0] - x) <= 2 and abs(point[1] - y) <= 2:
-                self.annotation_listbox.selection_clear(0, tk.END)
-                self.annotation_listbox.selection_set(i)
-                self.highlight_annotations([i])
-                return
-        for i, mask in enumerate(self.masks):
-            if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1] and mask[y, x] > 0:
-                self.annotation_listbox.selection_clear(0, tk.END)
-                self.annotation_listbox.selection_set(len(self.points) + len(self.boxes) + i)
-                self.highlight_mask(i)
-                return
+        if self.multi_select_mode:
+            # Handle multiple selections
+            for i, box in enumerate(self.boxes):
+                if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
+                    self.annotation_listbox.selection_set(len(self.points) + i)
+                    return
+            for i, point in enumerate(self.points):
+                if abs(point[0] - x) <= 2 and abs(point[1] - y) <= 2:
+                    self.annotation_listbox.selection_set(i)
+                    return
+        else:
+            for i, box in enumerate(self.boxes):
+                if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
+                    self.annotation_listbox.selection_clear(0, tk.END)
+                    self.annotation_listbox.selection_set(len(self.points) + i)
+                    self.highlight_annotations([len(self.points) + i])
+                    return
+            for i, point in enumerate(self.points):
+                if abs(point[0] - x) <= 2 and abs(point[1] - y) <= 2:
+                    self.annotation_listbox.selection_clear(0, tk.END)
+                    self.annotation_listbox.selection_set(i)
+                    self.highlight_annotations([i])
+                    return
+            for i, mask in enumerate(self.masks):
+                if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1] and mask[y, x] > 0:
+                    self.annotation_listbox.selection_clear(0, tk.END)
+                    self.annotation_listbox.selection_set(len(self.points) + len(self.boxes) + i)
+                    self.highlight_mask(i)
+                    return
 
-        self.highlight_mask(-1)  # Clear highlight if no mask is clicked
+            self.highlight_mask(-1)  # Clear highlight if no mask is clicked
 
     def delete_selected_annotation(self):
         selection = self.annotation_listbox.curselection()
