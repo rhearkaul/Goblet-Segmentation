@@ -10,6 +10,13 @@ import os
 from sam2 import sam_main
 from metrics import get_prop, analyze_properties
 
+from watershed.watershed import (
+    STAIN_VECTORS,
+    INTENSITY_THRESHOLDS,
+    SIZE_THRESHOLDS,
+    generate_centroid,
+)
+
 class ImageViewer(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -33,7 +40,19 @@ class ImageViewer(tk.Tk):
         self.boxes = []
         self.point_ids = []
         self.box_ids = []
-        self.brush_size = 2  # Default brush size
+        self.brush_size = 10  # Default brush size
+
+        self.sam_model_size = "H"
+        self.sam_weights_path = "sam_vit_h_4b8939.pth"
+
+        self.watershed_settings = {
+            "stain_vector": 0,
+            "equalization_bins": 5,
+            "intensity_thresh": INTENSITY_THRESHOLDS[0],
+            "size_thresh": SIZE_THRESHOLDS[0],
+            "max_aspect_ratio": 2.5,
+            "min_solidity": 0.55,
+        }
 
 
         self.create_widgets(window_width, window_height)
@@ -49,6 +68,10 @@ class ImageViewer(tk.Tk):
         self.image_name = ""
 
         self.manual_mask_mode = None
+
+
+
+
 
 
 
@@ -127,16 +150,154 @@ class ImageViewer(tk.Tk):
         menu1.add_command(label="Open Image", command=self.open_image)
 
         menu2.add_command(label="Placeholder 2")
-        menu3.add_command(label="Placeholder 3")
+        menu3.add_command(label="Watershed Settings", command=self.show_watershed_settings)
+        menu3.add_command(label="Run Watershed", command=self.run_watershed)
+
         menu5.add_command(label="Run Analysis", command=self.run_analysis)
 
+
+        menu4 = tk.Menu(menubar, tearoff=0)
         menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
+        menu4.add_command(label="SAM Settings", command=self.show_sam_settings)
+
 
         menubar.add_cascade(label="File", menu=menu1)
         menubar.add_cascade(label="View", menu=menu2)
         menubar.add_cascade(label="WaterShed", menu=menu3)
         menubar.add_cascade(label="SAM", menu=menu4)
         menubar.add_cascade(label="Metric", menu=menu5)
+
+    def show_watershed_settings(self):
+        watershed_settings_window = tk.Toplevel(self)
+        watershed_settings_window.title("Watershed Settings")
+
+        # Create stain vector input
+        stain_vector_label = tk.Label(watershed_settings_window, text="Stain Vector:")
+        stain_vector_label.pack()
+        stain_vector_var = tk.IntVar()
+        stain_vector_var.set(0)  # Set the initial value
+        stain_vector_entry = tk.Entry(watershed_settings_window, textvariable=stain_vector_var)
+        stain_vector_entry.pack()
+
+        # Create equalization bins input
+        equalization_bins_label = tk.Label(watershed_settings_window, text="Equalization Bins:")
+        equalization_bins_label.pack()
+        equalization_bins_var = tk.IntVar()
+        equalization_bins_var.set(5)  # Set the initial value
+        equalization_bins_entry = tk.Entry(watershed_settings_window, textvariable=equalization_bins_var)
+        equalization_bins_entry.pack()
+
+        # Create intensity threshold input
+        intensity_thresh_label = tk.Label(watershed_settings_window, text="Intensity Threshold:")
+        intensity_thresh_label.pack()
+        intensity_thresh_var = tk.StringVar()
+        intensity_thresh_var.set(",".join(map(str, INTENSITY_THRESHOLDS[0])))  # Set the initial value
+        intensity_thresh_entry = tk.Entry(watershed_settings_window, textvariable=intensity_thresh_var)
+        intensity_thresh_entry.pack()
+
+        # Create size threshold input
+        size_thresh_label = tk.Label(watershed_settings_window, text="Size Threshold:")
+        size_thresh_label.pack()
+        size_thresh_var = tk.StringVar()
+        size_thresh_var.set(",".join(map(str, SIZE_THRESHOLDS[0])))  # Set the initial value
+        size_thresh_entry = tk.Entry(watershed_settings_window, textvariable=size_thresh_var)
+        size_thresh_entry.pack()
+
+        # Create max aspect ratio input
+        max_aspect_ratio_label = tk.Label(watershed_settings_window, text="Max Aspect Ratio:")
+        max_aspect_ratio_label.pack()
+        max_aspect_ratio_var = tk.DoubleVar()
+        max_aspect_ratio_var.set(2.5)  # Set the initial value
+        max_aspect_ratio_entry = tk.Entry(watershed_settings_window, textvariable=max_aspect_ratio_var)
+        max_aspect_ratio_entry.pack()
+
+        # Create min solidity input
+        min_solidity_label = tk.Label(watershed_settings_window, text="Min Solidity:")
+        min_solidity_label.pack()
+        min_solidity_var = tk.DoubleVar()
+        min_solidity_var.set(0.55)  # Set the initial value
+        min_solidity_entry = tk.Entry(watershed_settings_window, textvariable=min_solidity_var)
+        min_solidity_entry.pack()
+
+        # Create save button
+        def save_settings():
+            stain_vector_index = stain_vector_var.get()
+            if stain_vector_index in STAIN_VECTORS:
+                self.watershed_settings = {
+                    "stain_vector": stain_vector_index,
+                    "equalization_bins": equalization_bins_var.get(),
+                    "intensity_thresh": tuple(map(float, intensity_thresh_var.get().split(","))),
+                    "size_thresh": tuple(map(int, size_thresh_var.get().split(","))),
+                    "max_aspect_ratio": max_aspect_ratio_var.get(),
+                    "min_solidity": min_solidity_var.get(),
+                }
+            else:
+                print(f"Invalid stain vector index: {stain_vector_index}")
+
+        save_button = tk.Button(watershed_settings_window, text="Save", command=save_settings)
+        save_button.pack(pady=10)
+
+        watershed_settings_window.mainloop()
+
+    def run_watershed(self):
+        if self.opened_image:
+            image = cv2.imread(self.image_path)
+            stain_vector = STAIN_VECTORS[self.watershed_settings["stain_vector"]]
+            centroid_coords, deconv_img, segmented_img, distances = generate_centroid(
+                image,
+                stain_vector,
+                self.watershed_settings["equalization_bins"],
+                self.watershed_settings["intensity_thresh"],
+                self.watershed_settings["size_thresh"],
+                self.watershed_settings["max_aspect_ratio"],
+                self.watershed_settings["min_solidity"],
+            )
+
+            # Clear existing point annotations
+            self.clear_points_and_boxes()
+
+            # Add centroid coordinates as point annotations
+            for coord in centroid_coords:
+                x, y = coord
+                oval_id = self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill='red')
+                self.points.append((x, y))
+                self.point_ids.append(oval_id)
+
+            self.update_annotation_listbox()
+        else:
+            print("No image opened. Please open an image first.")
+
+    def show_sam_settings(self):
+        sam_settings_window = tk.Toplevel(self)
+        sam_settings_window.title("SAM Settings")
+
+        # Create model size input
+        model_size_label = tk.Label(sam_settings_window, text="Model Size:")
+        model_size_label.pack()
+        model_size_var = tk.StringVar()
+        model_size_var.set(self.sam_model_size)  # Set the initial value from the instance variable
+        model_size_entry = tk.Entry(sam_settings_window, textvariable=model_size_var)
+        model_size_entry.pack()
+
+        # Create path to weights input
+        weights_path_label = tk.Label(sam_settings_window, text="Path to Weights:")
+        weights_path_label.pack()
+        weights_path_var = tk.StringVar()
+        weights_path_var.set(self.sam_weights_path)  # Set the initial value from the instance variable
+        weights_path_entry = tk.Entry(sam_settings_window, textvariable=weights_path_var)
+        weights_path_entry.pack()
+
+        # Create save button
+        def save_settings():
+            self.sam_model_size = model_size_var.get()
+            self.sam_weights_path = weights_path_var.get()
+            model_size_var.set(self.sam_model_size)  # Update the displayed value
+            weights_path_var.set(self.sam_weights_path)  # Update the displayed value
+
+        save_button = tk.Button(sam_settings_window, text="Save", command=save_settings)
+        save_button.pack(pady=10)
+
+        sam_settings_window.mainloop()
 
     def open_image(self):
         image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
@@ -540,13 +701,13 @@ class ImageViewer(tk.Tk):
 
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
-        path_to_weights = "sam_vit_h_4b8939.pth"
+        path_to_weights = self.sam_weights_path
 
         self.create_loading_screen()
         self.update()
 
         output_dir = sam_main(path_to_weights, annotations_filename='current_annotations.npz',
-                              image_folder=self.image_folder)
+                              image_folder=self.image_folder, model_size=self.sam_model_size)
         print("SAM function executed with current annotation.")
 
         self.loading_screen.destroy()
