@@ -70,7 +70,8 @@ class ImageViewer(tk.Tk):
         self.image_name = ""
 
         self.manual_mask_mode = None
-
+        self.drag_coefficient_x = 0
+        self.drag_coefficient_y = 0
 
 
     def create_widgets(self, window_width, window_height):
@@ -477,8 +478,8 @@ class ImageViewer(tk.Tk):
                 self.start_x = event.x
                 self.start_y = event.y
             elif self.point_select_mode:
-                x = event.x
-                y = event.y
+                x = event.x - self.drag_coefficient_x
+                y = event.y - self.drag_coefficient_y
                 oval_id = self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill='red')
                 self.points.append((x, y))
                 self.point_ids.append(oval_id)
@@ -494,6 +495,8 @@ class ImageViewer(tk.Tk):
                 self.canvas.move("all", delta_x, delta_y)
                 self.drag_start_x = event.x
                 self.drag_start_y = event.y
+                self.drag_coefficient_x += delta_x
+                self.drag_coefficient_y += delta_y
             if self.box_select_mode:
                 if self.rect_id:
                     self.canvas.delete(self.rect_id)
@@ -513,10 +516,10 @@ class ImageViewer(tk.Tk):
                 self.manual_mask_path.append((event.x, event.y))
                 self.create_manual_mask()
             elif self.box_select_mode:
-                x1 = min(self.start_x, event.x)
-                y1 = min(self.start_y, event.y)
-                x2 = max(self.start_x, event.x)
-                y2 = max(self.start_y, event.y)
+                x1 = min(self.start_x, event.x) - self.drag_coefficient_x
+                y1 = min(self.start_y, event.y) - self.drag_coefficient_y
+                x2 = max(self.start_x, event.x) - self.drag_coefficient_x
+                y2 = max(self.start_y, event.y) - self.drag_coefficient_y
                 self.boxes.append((x1, y1, x2, y2))
                 self.box_ids.append(self.rect_id)
                 self.rect_id = None  # Reset rect_id after appending it to box_ids
@@ -524,7 +527,9 @@ class ImageViewer(tk.Tk):
 
     def create_manual_mask(self):
         mask = np.zeros((self.opened_image.height, self.opened_image.width), dtype=np.uint8)
-        manual_mask_polygon = np.array(self.manual_mask_path, dtype=np.int32)
+        manual_mask_polygon = np.array(
+            [(x - self.drag_coefficient_x, y - self.drag_coefficient_y) for x, y in self.manual_mask_path],
+            dtype=np.int32)
         cv2.polylines(mask, [manual_mask_polygon], False, 255, thickness=self.brush_size)
 
         # Save the manual mask to the image folder with a timestamp
