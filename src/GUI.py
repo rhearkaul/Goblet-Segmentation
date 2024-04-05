@@ -415,7 +415,8 @@ class ImageViewer(tk.Tk):
             mask_image = Image.fromarray(mask_rgba, mode='RGBA')
             mask_photo = ImageTk.PhotoImage(mask_image)
             self.canvas.mask_images.append(mask_photo)  # Keep a reference to the mask photo
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=mask_photo, tags=f"mask_{i}")
+            self.canvas.create_image(self.drag_coefficient_x, self.drag_coefficient_y, anchor=tk.NW, image=mask_photo,
+                                     tags=f"mask_{i}")
 
     def toggle_manual_mask_mode(self):
         if self.opened_image:
@@ -440,6 +441,7 @@ class ImageViewer(tk.Tk):
                 self.manual_mask_button.configure(bg="lightgray")
         else:
             print("No image opened. Please open an image first.")
+
     def display_masks(self):
         for i, mask in enumerate(self.masks):
             binary_mask = mask > 0
@@ -450,7 +452,8 @@ class ImageViewer(tk.Tk):
             mask_image = Image.fromarray(mask_rgba, mode='RGBA')
             mask_photo = ImageTk.PhotoImage(mask_image)
             self.canvas.mask_images.append(mask_photo)  # Keep a reference to the mask photo
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=mask_photo, tags=f"mask_{i}")
+            self.canvas.create_image(self.drag_coefficient_x, self.drag_coefficient_y, anchor=tk.NW, image=mask_photo,
+                                     tags=f"mask_{i}")
 
     def toggle_box_select_mode(self):
         if self.opened_image:
@@ -623,8 +626,8 @@ class ImageViewer(tk.Tk):
             highlight_image = Image.fromarray(highlight_rgba, mode='RGBA')
             highlight_photo = ImageTk.PhotoImage(highlight_image)
             self.canvas.highlight_image = highlight_photo  # Keep a reference to the highlight photo
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=highlight_photo, tags="highlight")
-
+            self.canvas.create_image(self.drag_coefficient_x, self.drag_coefficient_y, anchor=tk.NW,
+                                     image=highlight_photo, tags="highlight")
     def clear_mask_highlight(self):
         for i in range(len(self.mask_files)):
             self.canvas.itemconfig(f"mask_{i}", state=tk.HIDDEN)
@@ -661,7 +664,7 @@ class ImageViewer(tk.Tk):
                 self.highlight_annotations([i])
                 return
         for i, mask in enumerate(self.masks):
-            if mask[y, x] > 0:
+            if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1] and mask[y, x] > 0:
                 self.annotation_listbox.selection_clear(0, tk.END)
                 self.annotation_listbox.selection_set(len(self.points) + len(self.boxes) + i)
                 self.highlight_mask(i)
