@@ -46,7 +46,7 @@ class ImageViewer(tk.Tk):
             "stain_vector": 0,
             "equalization_bins": 5,
             "intensity_thresh": INTENSITY_THRESHOLDS[0],
-            "size_thresh": SIZE_THRESHOLDS[0],
+            "size_thresh": SIZE_THRESHOLDS[2],
             "max_aspect_ratio": 2.5,
             "min_solidity": 0.55,
             "min_area": 300,
@@ -248,7 +248,7 @@ class ImageViewer(tk.Tk):
                 self.watershed_settings = {
                     "stain_vector": stain_vector_index,
                     "equalization_bins": equalization_bins_var.get(),
-                    "intensity_thresh": tuple(map(float, intensity_thresh_var.get().split(","))),
+                    "intensity_thresh": tuple(map(int, intensity_thresh_var.get().split(","))), # Todo - make int
                     "size_thresh": tuple(map(int, size_thresh_var.get().split(","))),
                     "max_aspect_ratio": max_aspect_ratio_var.get(),
                     "min_solidity": min_solidity_var.get(),
