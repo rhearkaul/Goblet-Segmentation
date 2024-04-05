@@ -175,10 +175,12 @@ class ImageViewer(tk.Tk):
 
         menu5.add_command(label="Run Analysis", command=self.run_analysis)
 
-
         menu4 = tk.Menu(menubar, tearoff=0)
         menu4.add_command(label="SAM Settings", command=self.show_sam_settings)
         menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
+        menu4.add_command(label="Run SAM with Selected Annotations", command=self.run_sam_with_selected_annotations)
+
+
 
 
         menubar.add_cascade(label="File", menu=menu1)
@@ -276,6 +278,53 @@ class ImageViewer(tk.Tk):
         save_button.pack(pady=10)
 
         watershed_settings_window.mainloop()
+
+    def run_sam_with_selected_annotations(self):
+        selected_indices = self.annotation_listbox.curselection()
+        selected_points = [self.points[i] for i in selected_indices if i < len(self.points)]
+        selected_boxes = [self.boxes[i - len(self.points)] for i in selected_indices if
+                          i >= len(self.points) and i < len(self.points) + len(self.boxes)]
+
+        if not selected_points and not selected_boxes:
+            print("No annotations selected. Please select at least one annotation.")
+            return
+
+        self.save_selected_annotations(selected_points, selected_boxes)
+        path_to_weights = self.sam_weights_path
+
+        self.create_loading_screen()
+        self.update()
+
+        output_dir = sam_main(path_to_weights, annotations_filename='selected_annotations.npz',
+                              image_folder=self.image_folder, model_size=self.sam_model_size)
+        print("SAM function executed with selected annotations.")
+
+        self.loading_screen.destroy()
+
+        # Save SAM-generated masks with a timestamp
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
+        mask_files = [f for f in os.listdir(output_dir) if f.startswith("mask_")]
+        for i, mask_file in enumerate(mask_files):
+            src_path = os.path.join(output_dir, mask_file)
+            dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
+            shutil.copy2(src_path, dst_path)
+
+        # Remove the original "mask_*.png" files
+        for mask_file in mask_files:
+            os.remove(os.path.join(output_dir, mask_file))
+
+        self.load_masks()
+        self.clear_points_and_boxes()
+
+    def save_selected_annotations(self, selected_points, selected_boxes):
+        if self.opened_image:
+            default_filename = 'selected_annotations.npz'
+            points_array = np.array(selected_points)
+            boxes_array = np.array(selected_boxes)
+            np.savez(default_filename, points=points_array, boxes=boxes_array, image_path=self.image_path)
+            print(f"Selected annotations saved successfully as {default_filename}.")
+        else:
+            print("No image opened. Please open an image before saving annotations.")
 
     def run_watershed(self):
         if self.opened_image:
@@ -654,13 +703,16 @@ class ImageViewer(tk.Tk):
         for index in selection:
             if index < len(self.points):
                 point = self.points[index]
-                self.canvas.create_oval(point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4, outline='yellow',
-                                        tags="highlight")
+                self.canvas.create_oval(point[0] + self.drag_coefficient_x - 4, point[1] + self.drag_coefficient_y - 4,
+                                        point[0] + self.drag_coefficient_x + 4, point[1] + self.drag_coefficient_y + 4,
+                                        outline='yellow', tags="highlight")
             else:
                 box_index = index - len(self.points)
                 if box_index < len(self.boxes):
                     box = self.boxes[box_index]
-                    self.canvas.create_rectangle(box[0], box[1], box[2], box[3], outline='yellow', tags="highlight")
+                    self.canvas.create_rectangle(box[0] + self.drag_coefficient_x, box[1] + self.drag_coefficient_y,
+                                                 box[2] + self.drag_coefficient_x, box[3] + self.drag_coefficient_y,
+                                                 outline='yellow', tags="highlight")
 
     def check_annotation_click(self, x, y):
         if self.multi_select_mode:
