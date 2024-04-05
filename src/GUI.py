@@ -431,12 +431,6 @@ class ImageViewer(tk.Tk):
                 if self.rect_id:
                     self.canvas.delete(self.rect_id)
                     self.rect_id = None
-                # Clean up point select mode
-                for point_id in self.point_ids:
-                    self.canvas.delete(point_id)
-                self.points = []
-                self.point_ids = []
-                self.update_annotation_listbox()
             else:
                 self.manual_mask_button.configure(bg="lightgray")
         else:
