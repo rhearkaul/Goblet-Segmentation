@@ -1,7 +1,13 @@
+"""Class to perform preprocesing and Watershed techniques
+for prompt generation
+
+Author: Rhea Kaul
+Adapted by: Alvin Hendricks
+"""
+
 import numpy as np
 from scipy.linalg import inv
 from scipy.ndimage import binary_fill_holes, distance_transform_edt
-from skimage import morphology
 from skimage.exposure import exposure
 from skimage.feature import peak_local_max
 from skimage.filters import threshold_otsu
@@ -82,16 +88,23 @@ def _threshold_and_binarize(
     return filtered_img
 
 
-def _filter_img(bin_img, props, min_solidity, max_aspect_ratio):
+def _filter_img(
+    bin_img,
+    props,
+    min_solidity,
+    max_aspect_ratio,
+    min_area,
+):
     """Filteres out `regionprops` based on solidity."""
     # Can be restructured if more filters are required.
+    # Should be optimized eventually...
 
     for prop in props:
         if prop.minor_axis_length <= 1:
             continue  # Skip this region
 
         aspect_ratio = prop.major_axis_length / prop.minor_axis_length
-        if aspect_ratio < max_aspect_ratio:
+        if aspect_ratio > max_aspect_ratio:
             # Set the corresponding pixel values to False in the binary image
             coords = prop.coords
             bin_img[coords[:, 0], coords[:, 1]] = False
@@ -101,7 +114,7 @@ def _filter_img(bin_img, props, min_solidity, max_aspect_ratio):
     filtered_img = np.zeros_like(bin_img)
 
     for prop in props:
-        if prop.solidity >= min_solidity:
+        if prop.solidity >= min_solidity or prop.area >= min_area:
             # Include the prop in the filtered binary image
             filtered_img[labels == prop.label] = 1
 
@@ -138,19 +151,48 @@ REGION_PROP_KEYS = (
 
 
 def generate_centroid(
-    image,
-    stain_vector,
-    equalization_bins,
-    intensity_thresh,
-    size_thresh,
-    max_aspect_ratio,
-    min_solidity,
+    image: np.ndarray,
+    stain_vector: int,
+    equalization_bins: int,
+    intensity_thresh: tuple[float, float],
+    size_thresh: tuple[float, float],
+    max_aspect_ratio: float,
+    min_solidity: float,
+    min_area: float,
 ):
     """Generates the centroid locations given an image.
 
     Parameters
     ----------
-        todo
+    image: np.ndarray
+        image in (N,M,C) dimension, denoting the N=length, M=width, and C=color channels.
+
+    stain_vector: int
+        the vector to be used during deconvolution.
+
+    equalization_bins: int
+        The number of bins for histogram equalization.
+        This controls the intensity difference between the colors of the image.
+
+    intensity_thresh: tuple[float, float]
+        The min and max values that are used in thresholding steps.
+        This selects the range of values within the histograms;
+        higher thresholds select for brighter colors and lower
+        thresholds select for darker colors.
+
+    size_thresh: tuple[float, float]
+        The size thresholds to filter out stray objects from the thresholding step.
+
+    max_aspect_ratio: float
+        The maximum ratio between the major axis and minor axis of the object detected
+        and is used for filtering. Large ratios typically indicate outliers.
+
+    max_solidity: float
+        # Todo
+
+    min_area: float
+        The minimum area of the detected object. This is set to remove the smaller
+        point-like objects which are likely artifacts.
 
     Returns
     -------
@@ -173,7 +215,7 @@ def generate_centroid(
     # Filter out noise (certain shapes)
     labels = label(bin_img)
     props = regionprops(labels)
-    filtered_img = _filter_img(bin_img, props, min_solidity, max_aspect_ratio)
+    filtered_img = _filter_img(bin_img, props, min_solidity, max_aspect_ratio, min_area)
 
     # Generate promps from watershed
     segmented_img, distances = _watershed(filtered_img)
