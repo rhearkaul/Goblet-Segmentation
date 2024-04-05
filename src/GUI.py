@@ -664,15 +664,16 @@ class ImageViewer(tk.Tk):
 
     def check_annotation_click(self, x, y):
         if self.multi_select_mode:
-            # Handle multiple selections
+            selected_indices = []
             for i, box in enumerate(self.boxes):
                 if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
-                    self.annotation_listbox.selection_set(len(self.points) + i)
-                    return
+                    selected_indices.append(len(self.points) + i)
             for i, point in enumerate(self.points):
                 if abs(point[0] - x) <= 2 and abs(point[1] - y) <= 2:
-                    self.annotation_listbox.selection_set(i)
-                    return
+                    selected_indices.append(i)
+            if selected_indices:
+                self.annotation_listbox.selection_set(selected_indices)
+                self.highlight_annotations(selected_indices)
         else:
             for i, box in enumerate(self.boxes):
                 if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
