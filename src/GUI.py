@@ -507,8 +507,12 @@ class ImageViewer(tk.Tk):
 
     def update_annotation_listbox(self):
         self.annotation_listbox.delete(0, tk.END)
-        for mask_file in self.mask_files:
-            self.annotation_listbox.insert(tk.END, mask_file)
+        for i, point in enumerate(self.points):
+            self.annotation_listbox.insert(tk.END, f"Point {i + 1}: ({point[0]}, {point[1]})")
+        for i, box in enumerate(self.boxes):
+            self.annotation_listbox.insert(tk.END, f"Box {i + 1}: ({box[0]}, {box[1]}, {box[2]}, {box[3]})")
+        for i, mask_file in enumerate(self.mask_files):
+            self.annotation_listbox.insert(tk.END, f"Mask {i + 1}: {mask_file}")
 
     def on_annotation_select(self, event):
         selection = self.annotation_listbox.curselection()
