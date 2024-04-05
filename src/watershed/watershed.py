@@ -125,7 +125,9 @@ def _filter_img(
 
 
 def _consolidate_duplicate_prompts(props, distance_thresh):
-    """Consolidates the prompts by averaging nearby thresholds."""
+    """Consolidates the prompts by averaging nearby thresholds.
+    Unused due to inefficient and unstable implementation.
+    """
     merged_centroids = []
     merged = np.zeros(len(props), dtype=bool)
 
