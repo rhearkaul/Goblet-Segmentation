@@ -1,5 +1,6 @@
-"""Class to perform preprocesing and Watershed techniques
-for prompt generation
+"""Class to perform preprocesing and Watershed techniques for prompt generation.
+The original code is written by the author but is adapted into this
+codebase to match coding styles and practices.
 
 Author: Rhea Kaul
 Adapted by: Alvin Hendricks
@@ -121,6 +122,41 @@ def _filter_img(
     return filtered_img
 
 
+def _consolidate_duplicate_prompts(props, distance_thresh):
+    """Consolidates the prompts by averaging nearby thresholds."""
+    merged_centroids = []
+    merged = np.zeros(len(props), dtype=bool)
+
+    all_centroids = np.array([prop.centroid for prop in props])
+
+    for i, prop in enumerate(props):
+
+        if merged[i]:
+            continue
+
+        # Filter for nearby centroids
+        centroid = prop.centroid
+        dists = np.linalg.norm(all_centroids - centroid, axis=1)
+        idx_nearby = np.where((dists <= distance_thresh) & ~merged)[0]
+
+        # Remove current from consideration
+        idx_nearby = idx_nearby[idx_nearby != i]
+
+        if len(idx_nearby) > 0:
+            # Obtain mean centroid
+            nearby_centroids = np.array([centroid[idx] for idx in idx_nearby])
+            merged_centroids = np.vstack((centroid, nearby_centroids))
+            mean_centroid = np.mean(merged_centroids, axis=0)
+
+            merged[idx_nearby] = True
+        else:
+            mean_centroid = centroid
+
+        merged_centroids.append(mean_centroid)
+
+    return merged_centroids
+
+
 def _watershed(bin_img, footprint_kernel=(3, 3)):
     """Watershed segmentation on a binary image."""
     # Perform distance transform
@@ -159,6 +195,7 @@ def generate_centroid(
     max_aspect_ratio: float,
     min_solidity: float,
     min_area: float,
+    distance_thresh: float,
 ):
     """Generates the centroid locations given an image.
 
@@ -194,6 +231,9 @@ def generate_centroid(
         The minimum area of the detected object. This is set to remove the smaller
         point-like objects which are likely artifacts.
 
+    distance_thresh: float
+        # Todo
+
     Returns
     -------
     list[tuple]:
@@ -221,6 +261,8 @@ def generate_centroid(
     segmented_img, distances = _watershed(filtered_img)
     labels = label(segmented_img)
     props = regionprops(labels)
-    centroid_coords = np.array([prop.centroid for prop in props]).astype(int)
+
+    centroid_coords = _consolidate_duplicate_prompts(props, distance_thresh)
+    # centroid_coords = np.array([prop.centroid for prop in props]).astype(int)
 
     return centroid_coords, deconv_img, segmented_img, distances
