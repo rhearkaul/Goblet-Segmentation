@@ -497,10 +497,10 @@ class ImageViewer(tk.Tk):
                 self.start_x = event.x
                 self.start_y = event.y
             elif self.point_select_mode:
-                x = event.x - self.drag_coefficient_x
-                y = event.y - self.drag_coefficient_y
+                x = event.x
+                y = event.y
                 oval_id = self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill='red')
-                self.points.append((x, y))
+                self.points.append((x - self.drag_coefficient_x, y - self.drag_coefficient_y))
                 self.point_ids.append(oval_id)
                 self.update_annotation_listbox()
             else:
@@ -535,11 +535,12 @@ class ImageViewer(tk.Tk):
                 self.manual_mask_path.append((event.x, event.y))
                 self.create_manual_mask()
             elif self.box_select_mode:
-                x1 = min(self.start_x, event.x) - self.drag_coefficient_x
-                y1 = min(self.start_y, event.y) - self.drag_coefficient_y
-                x2 = max(self.start_x, event.x) - self.drag_coefficient_x
-                y2 = max(self.start_y, event.y) - self.drag_coefficient_y
-                self.boxes.append((x1, y1, x2, y2))
+                x1 = min(self.start_x, event.x)
+                y1 = min(self.start_y, event.y)
+                x2 = max(self.start_x, event.x)
+                y2 = max(self.start_y, event.y)
+                self.boxes.append((x1 - self.drag_coefficient_x, y1 - self.drag_coefficient_y,
+                                   x2 - self.drag_coefficient_x, y2 - self.drag_coefficient_y))
                 self.box_ids.append(self.rect_id)
                 self.rect_id = None  # Reset rect_id after appending it to box_ids
                 self.update_annotation_listbox()
@@ -594,14 +595,17 @@ class ImageViewer(tk.Tk):
         self.canvas.delete("highlight")  # Remove any existing highlight
         if point_index >= 0 and point_index < len(self.points):
             point = self.points[point_index]
-            self.canvas.create_oval(point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4, outline='yellow',
-                                    tags="highlight")
+            self.canvas.create_oval(point[0] + self.drag_coefficient_x - 4, point[1] + self.drag_coefficient_y - 4,
+                                    point[0] + self.drag_coefficient_x + 4, point[1] + self.drag_coefficient_y + 4,
+                                    outline='yellow', tags="highlight")
 
     def highlight_box(self, box_index):
         self.canvas.delete("highlight")  # Remove any existing highlight
         if box_index >= 0 and box_index < len(self.boxes):
             box = self.boxes[box_index]
-            self.canvas.create_rectangle(box[0], box[1], box[2], box[3], outline='yellow', tags="highlight")
+            self.canvas.create_rectangle(box[0] + self.drag_coefficient_x, box[1] + self.drag_coefficient_y,
+                                         box[2] + self.drag_coefficient_x, box[3] + self.drag_coefficient_y,
+                                         outline='yellow', tags="highlight")
 
     def highlight_mask(self, mask_index):
         self.canvas.delete("highlight")  # Remove any existing highlight
