@@ -1,21 +1,18 @@
+import os
 import shutil
 import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog
 
 import cv2
-from PIL import ImageTk, Image
 import numpy as np
-import os
-from sam2 import sam_main
-from metrics import get_prop, analyze_properties
+from PIL import Image, ImageTk
 
-from watershed.watershed import (
-    STAIN_VECTORS,
-    INTENSITY_THRESHOLDS,
-    SIZE_THRESHOLDS,
-    generate_centroid,
-)
+from metrics import analyze_properties, get_prop
+from sam2 import sam_main
+from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
+                                 STAIN_VECTORS, generate_centroid)
+
 
 class ImageViewer(tk.Tk):
     def __init__(self):
@@ -52,6 +49,8 @@ class ImageViewer(tk.Tk):
             "size_thresh": SIZE_THRESHOLDS[0],
             "max_aspect_ratio": 2.5,
             "min_solidity": 0.55,
+            "min_area": 300,
+            # "dist_thresh": 30,
         }
 
         self.drag_mode = False
@@ -164,8 +163,8 @@ class ImageViewer(tk.Tk):
 
 
         menu4 = tk.Menu(menubar, tearoff=0)
-        menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
         menu4.add_command(label="SAM Settings", command=self.show_sam_settings)
+        menu4.add_command(label="Run SAM with Current Annotation", command=self.run_sam_with_current_annotation)
 
 
         menubar.add_cascade(label="File", menu=menu1)
@@ -226,6 +225,22 @@ class ImageViewer(tk.Tk):
         min_solidity_entry = tk.Entry(watershed_settings_window, textvariable=min_solidity_var)
         min_solidity_entry.pack()
 
+        # Create min area input
+        min_area_label = tk.Label(watershed_settings_window, text="Min Area:")
+        min_area_label.pack()
+        min_area_var = tk.DoubleVar()
+        min_area_var.set(200)  # Set the initial value
+        min_area_entry = tk.Entry(watershed_settings_window, textvariable=min_area_var)
+        min_area_entry.pack()
+
+        # Create dist thresh input
+        # dist_thresh_label = tk.Label(watershed_settings_window, text="Distance Threshold:")
+        # dist_thresh_label.pack()
+        # dist_thresh_var = tk.DoubleVar()
+        # dist_thresh_var.set(30)  # Set the initial value
+        # dist_thresh_entry = tk.Entry(watershed_settings_window, textvariable=dist_thresh_var)
+        # dist_thresh_entry.pack()
+
         # Create save button
         def save_settings():
             stain_vector_index = stain_vector_var.get()
@@ -237,6 +252,8 @@ class ImageViewer(tk.Tk):
                     "size_thresh": tuple(map(int, size_thresh_var.get().split(","))),
                     "max_aspect_ratio": max_aspect_ratio_var.get(),
                     "min_solidity": min_solidity_var.get(),
+                    "min_area": min_area_var.get(),
+                    # "dist_thresh": dist_thresh_var.get()
                 }
             else:
                 print(f"Invalid stain vector index: {stain_vector_index}")
@@ -258,6 +275,8 @@ class ImageViewer(tk.Tk):
                 self.watershed_settings["size_thresh"],
                 self.watershed_settings["max_aspect_ratio"],
                 self.watershed_settings["min_solidity"],
+                self.watershed_settings["min_area"],
+                # self.watershed_settings["dist_thresh"]
             )
 
             # Clear existing point annotations
