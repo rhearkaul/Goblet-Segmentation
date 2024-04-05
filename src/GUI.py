@@ -31,7 +31,7 @@ class ImageViewer(tk.Tk):
         window_height = int(screen_height * 0.75)
 
         self.geometry(f"{window_width}x{window_height}")
-        self.resizable(False, False)  # Disable window resizing
+        self.resizable(True, True)  # Allow window resizing
 
         self.opened_image = None
         self.box_select_mode = False
@@ -54,7 +54,6 @@ class ImageViewer(tk.Tk):
             "min_solidity": 0.55,
         }
 
-
         self.create_widgets(window_width, window_height)
         self.create_menubar()
 
@@ -68,12 +67,6 @@ class ImageViewer(tk.Tk):
         self.image_name = ""
 
         self.manual_mask_mode = None
-
-
-
-
-
-
 
     def create_widgets(self, window_width, window_height):
 
@@ -125,15 +118,6 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-
-        brush_size_frame = tk.Frame(self, bg="lightgray")
-        brush_size_frame.pack(side=tk.TOP, fill=tk.X)
-        brush_size_label = tk.Label(brush_size_frame, text="Brush Size:")
-        brush_size_label.pack(side=tk.LEFT, padx=5, pady=5)
-        self.brush_size_scale = tk.Scale(brush_size_frame, from_=1, to=10, orient=tk.HORIZONTAL, length=200,
-                                         command=self.update_brush_size)
-        self.brush_size_scale.set(self.brush_size)
-        self.brush_size_scale.pack(side=tk.LEFT, padx=5, pady=5)
 
     def update_brush_size(self, value):
         self.brush_size = int(value)
@@ -300,7 +284,7 @@ class ImageViewer(tk.Tk):
         sam_settings_window.mainloop()
 
     def open_image(self):
-        image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
+        image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.tif;*.tiff")])
         if image_path:
             self.image_path = image_path
             self.image_name = os.path.splitext(os.path.basename(image_path))[0]
@@ -309,7 +293,6 @@ class ImageViewer(tk.Tk):
             image = cv2.imread(os.path.join(self.image_folder, os.path.basename(image_path)))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(image)
-            image.thumbnail((800, 600))
             self.opened_image = image
             photo = ImageTk.PhotoImage(image)
             self.canvas.image = photo
