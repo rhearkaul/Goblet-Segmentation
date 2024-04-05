@@ -517,17 +517,31 @@ class ImageViewer(tk.Tk):
     def on_annotation_select(self, event):
         selection = self.annotation_listbox.curselection()
         self.highlight_annotations(selection)
-
         # Highlight the selected mask
         if len(selection) == 1:
             index = selection[0]
-            if index >= len(self.points) + len(self.boxes):
+            if index < len(self.points):
+                self.highlight_point(index)
+            elif index < len(self.points) + len(self.boxes):
+                self.highlight_box(index - len(self.points))
+            else:
                 mask_index = index - len(self.points) - len(self.boxes)
                 self.highlight_mask(mask_index)
-            else:
-                self.highlight_mask(-1)  # Clear highlight if no mask is selected
         else:
             self.highlight_mask(-1)  # Clear highlight if multiple items are selected
+
+    def highlight_point(self, point_index):
+        self.canvas.delete("highlight")  # Remove any existing highlight
+        if point_index >= 0 and point_index < len(self.points):
+            point = self.points[point_index]
+            self.canvas.create_oval(point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4, outline='yellow',
+                                    tags="highlight")
+
+    def highlight_box(self, box_index):
+        self.canvas.delete("highlight")  # Remove any existing highlight
+        if box_index >= 0 and box_index < len(self.boxes):
+            box = self.boxes[box_index]
+            self.canvas.create_rectangle(box[0], box[1], box[2], box[3], outline='yellow', tags="highlight")
 
     def highlight_mask(self, mask_index):
         self.canvas.delete("highlight")  # Remove any existing highlight
