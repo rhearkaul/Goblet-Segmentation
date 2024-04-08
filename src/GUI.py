@@ -899,29 +899,45 @@ class ImageViewer(tk.Tk):
         if self.multi_select_mode:
             selected_indices = []
             for i, box in enumerate(self.boxes):
-                if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
+                if (
+                        box[0] + self.drag_coefficient_x <= x <= box[2] + self.drag_coefficient_x
+                        and box[1] + self.drag_coefficient_y <= y <= box[3] + self.drag_coefficient_y
+                ):
                     selected_indices.append(len(self.points) + i)
             for i, point in enumerate(self.points):
-                if abs(point[0] - x) <= 2 and abs(point[1] - y) <= 2:
+                if (
+                        abs(point[0] + self.drag_coefficient_x - x) <= 2
+                        and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                ):
                     selected_indices.append(i)
             if selected_indices:
                 self.annotation_listbox.selection_set(selected_indices)
                 self.highlight_annotations(selected_indices)
         else:
             for i, box in enumerate(self.boxes):
-                if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
+                if (
+                        box[0] + self.drag_coefficient_x <= x <= box[2] + self.drag_coefficient_x
+                        and box[1] + self.drag_coefficient_y <= y <= box[3] + self.drag_coefficient_y
+                ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(len(self.points) + i)
                     self.highlight_annotations([len(self.points) + i])
                     return
             for i, point in enumerate(self.points):
-                if abs(point[0] - x) <= 2 and abs(point[1] - y) <= 2:
+                if (
+                        abs(point[0] + self.drag_coefficient_x - x) <= 2
+                        and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(i)
                     self.highlight_annotations([i])
                     return
             for i, mask in enumerate(self.masks):
-                if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1] and mask[y, x] > 0:
+                if (
+                        0 <= y - self.drag_coefficient_y < mask.shape[0]
+                        and 0 <= x - self.drag_coefficient_x < mask.shape[1]
+                        and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x] > 0
+                ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(
                         len(self.points) + len(self.boxes) + i
