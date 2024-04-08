@@ -12,12 +12,8 @@ from PIL import Image, ImageTk
 
 from metrics import analyze_properties, get_prop
 from sam2 import sam_main
-from watershed.watershed import (
-    INTENSITY_THRESHOLDS,
-    SIZE_THRESHOLDS,
-    STAIN_VECTORS,
-    generate_centroid,
-)
+from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
+                                 STAIN_VECTORS, generate_centroid)
 
 
 class ImageViewer(tk.Tk):
@@ -1141,22 +1137,20 @@ class ImageViewer(tk.Tk):
         res_x, res_y = self.opened_image.info.get("resolution", (1, 1))
 
         results = []
-        for i, binary_mask in enumerate(binary_masks):
+        for binary_mask in binary_masks:
             prop_df = get_prop(binary_mask)
             if not prop_df.empty:
                 result = analyze_properties(prop_df, res_x)
                 results.append(result)
 
         # Save results to a CSV file with a timestamp
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        # timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
         # results_file = os.path.join(
         #     self.image_folder, f"analysis_results_{timestamp}.csv"
         # )
 
-        combined_results = pd.concat(
-            results, keys=range(1, len(results) + 1), names=["Mask", "Property"]
-        )
+        combined_results = pd.concat(results, axis=1).T.reset_index(drop=True)
 
         csv_output_folder = filedialog.asksaveasfilename(
             initialdir=".",
@@ -1165,13 +1159,14 @@ class ImageViewer(tk.Tk):
             filetypes=[("CSV", "*.csv")],
         )
 
-        combined_results.to_csv(csv_output_folder)
+        if csv_output_folder:
+            combined_results.to_csv(csv_output_folder, index=False)
 
-        print(f"Analysis results saved to {csv_output_folder}")
-        print("Analysis Results:")
-        for i, result in enumerate(results):
-            print(f"Mask {i + 1}:")
-            print(result)
+            print(f"Analysis results saved to {csv_output_folder}")
+            print("Analysis Results:")
+            for i, result in enumerate(results):
+                print(f"Mask {i + 1}:")
+                print(result)
 
 
 if __name__ == "__main__":
