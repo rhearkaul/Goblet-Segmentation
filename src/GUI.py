@@ -1149,18 +1149,25 @@ class ImageViewer(tk.Tk):
 
         # Save results to a CSV file with a timestamp
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+
         # results_file = os.path.join(
         #     self.image_folder, f"analysis_results_{timestamp}.csv"
         # )
 
-        results_file = filedialog.askdirectory(initialdir=".", title="Save Location")
-
         combined_results = pd.concat(
             results, keys=range(1, len(results) + 1), names=["Mask", "Property"]
         )
-        combined_results.to_csv(results_file)
 
-        print(f"Analysis results saved to {results_file}")
+        csv_output_folder = filedialog.asksaveasfilename(
+            initialdir=".",
+            title="Save Location",
+            defaultextension=".csv",
+            filetypes=[("CSV", "*.csv")],
+        )
+
+        combined_results.to_csv(csv_output_folder)
+
+        print(f"Analysis results saved to {csv_output_folder}")
         print("Analysis Results:")
         for i, result in enumerate(results):
             print(f"Mask {i + 1}:")
