@@ -105,7 +105,7 @@ class SAModel:
         finally:
             sam.to("cuda" if self._cuda_available else "cpu")
             self.model = SamPredictor(sam)
-            logging.error("SAM model generated, proceed with predictions")
+            logging.info("SAM model generated, proceeding with predictions")
 
     def set_image(self, image):
         """Sets the image to the model. Does nothing if model is not loaded.
