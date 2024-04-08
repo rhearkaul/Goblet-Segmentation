@@ -432,7 +432,11 @@ class ImageViewer(tk.Tk):
             for coord in centroid_coords:
                 x, y = coord
                 oval_id = self.canvas.create_oval(
-                    x - 2, y - 2, x + 2, y + 2, fill="red"
+                    x + self.drag_coefficient_x - 2,
+                    y + self.drag_coefficient_y - 2,
+                    x + self.drag_coefficient_x + 2,
+                    y + self.drag_coefficient_y + 2,
+                    fill="red"
                 )
                 self.points.append((x, y))
                 self.point_ids.append(oval_id)
