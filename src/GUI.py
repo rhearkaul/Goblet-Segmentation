@@ -1092,42 +1092,6 @@ class ImageViewer(tk.Tk):
             self.canvas.image = photo
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
 
-    def loadAnnotations(self, annotation_file):
-        # Load annotations from a given file
-        if os.path.exists(annotation_file):
-            data = np.load(annotation_file, allow_pickle=True)
-            loaded_points = data["points"]
-            loaded_boxes = data["boxes"]
-
-            # Clear existing annotations
-            for point_id in self.point_ids:
-                self.canvas.delete(point_id)
-            for box_id in self.box_ids:
-                self.canvas.delete(box_id)
-
-            # Clear the lists
-            self.points.clear()
-            self.boxes.clear()
-            self.point_ids.clear()
-            self.box_ids.clear()
-
-            # Load new annotations
-            for point in loaded_points:
-                oval_id = self.canvas.create_oval(
-                    point[0] - 2, point[1] - 2, point[0] + 2, point[1] + 2, fill="red"
-                )
-                self.points.append((point[0], point[1]))
-                self.point_ids.append(oval_id)
-
-            for box in loaded_boxes:
-                rect_id = self.canvas.create_rectangle(
-                    box[0], box[1], box[2], box[3], outline="green"
-                )
-                self.boxes.append((box[0], box[1], box[2], box[3]))
-                self.box_ids.append(rect_id)
-        else:
-            print(f"Annotation file {annotation_file} not found.")
-
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
         path_to_weights = self.sam_weights_path
