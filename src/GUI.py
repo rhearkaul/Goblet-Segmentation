@@ -684,12 +684,8 @@ class ImageViewer(tk.Tk):
             elif self.point_select_mode:
                 x = event.x
                 y = event.y
-                oval_id = self.canvas.create_oval(
-                    x - 2, y - 2, x + 2, y + 2, fill="red"
-                )
-                self.points.append(
-                    (x - self.drag_coefficient_x, y - self.drag_coefficient_y)
-                )
+                oval_id = self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill='red')
+                self.points.append((x - self.drag_coefficient_x, y - self.drag_coefficient_y))
                 self.point_ids.append(oval_id)
                 self.update_annotation_listbox()
             else:
@@ -814,14 +810,9 @@ class ImageViewer(tk.Tk):
         self.canvas.delete("highlight")  # Remove any existing highlight
         if point_index >= 0 and point_index < len(self.points):
             point = self.points[point_index]
-            self.canvas.create_oval(
-                point[0] + self.drag_coefficient_x - 4,
-                point[1] + self.drag_coefficient_y - 4,
-                point[0] + self.drag_coefficient_x + 4,
-                point[1] + self.drag_coefficient_y + 4,
-                outline="yellow",
-                tags="highlight",
-            )
+            self.canvas.create_oval(point[0] + self.drag_coefficient_x - 4, point[1] + self.drag_coefficient_y - 4,
+                                    point[0] + self.drag_coefficient_x + 4, point[1] + self.drag_coefficient_y + 4,
+                                    outline='yellow', tags="highlight")
 
     def highlight_box(self, box_index):
         self.canvas.delete("highlight")  # Remove any existing highlight
