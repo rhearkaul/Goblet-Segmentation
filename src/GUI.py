@@ -1137,9 +1137,8 @@ class ImageViewer(tk.Tk):
 
         binary_masks = [mask > 0 for mask in self.masks]
 
-        res_x, res_y = self.opened_image.info.get("resolution", (None, None))
-        if not res_x or not res_y:
-            res_x = res_y = 1  # Set a default resolution if not available
+        # Set a default resolution to x=y=1 if not available
+        res_x, res_y = self.opened_image.info.get("resolution", (1, 1))
 
         results = []
         for i, binary_mask in enumerate(binary_masks):
@@ -1150,9 +1149,12 @@ class ImageViewer(tk.Tk):
 
         # Save results to a CSV file with a timestamp
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        results_file = os.path.join(
-            self.image_folder, f"analysis_results_{timestamp}.csv"
-        )
+        # results_file = os.path.join(
+        #     self.image_folder, f"analysis_results_{timestamp}.csv"
+        # )
+
+        results_file = filedialog.askdirectory(initialdir=".", title="Save Location")
+
         combined_results = pd.concat(
             results, keys=range(1, len(results) + 1), names=["Mask", "Property"]
         )
