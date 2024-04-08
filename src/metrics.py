@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from skimage.measure import label, regionprops_table
 
@@ -21,14 +22,14 @@ _RATIO_PROPS = [
 PROPERTIES = _MEASURED_PROPS + _RATIO_PROPS
 
 
-def get_prop(binary_mask: list, properties: list = PROPERTIES):
+def get_prop(binary_mask: np.ndarray, properties: list = PROPERTIES):
     """
     Gets the properties of the binary masks.
 
     Parameters:
     -----------
-    binary_mask: list
-        a collection of 2D images of binary masks.
+    binary_mask: np.ndarray
+        2D binary masks.
 
     properties: list
         a collection of properties that is made available by
