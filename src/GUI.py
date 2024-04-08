@@ -1,5 +1,6 @@
 import os
 import shutil
+import time
 import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog
@@ -364,7 +365,7 @@ class ImageViewer(tk.Tk):
         self.save_selected_annotations(selected_points, selected_boxes)
         path_to_weights = self.sam_weights_path
 
-        self.create_loading_screen()
+        self.create_loading_screen("Running SAM.\nThis may take some time...")
         self.update()
 
         output_dir = sam_main(
@@ -408,7 +409,12 @@ class ImageViewer(tk.Tk):
             print("No image opened. Please open an image before saving annotations.")
 
     def run_watershed(self):
+        # Create loading window
         if self.opened_image:
+            self.create_loading_screen("Running Watershed.\nThis may take some time...")
+            self.update()
+
+            # Get centroids
             image = cv2.imread(self.image_path)
             stain_vector = STAIN_VECTORS[self.watershed_settings["stain_vector"]]
             centroid_coords, deconv_img, segmented_img, distances = generate_centroid(
@@ -436,6 +442,8 @@ class ImageViewer(tk.Tk):
                 self.point_ids.append(oval_id)
 
             self.update_annotation_listbox()
+
+            self.loading_screen.destroy()
         else:
             print("No image opened. Please open an image first.")
 
@@ -533,13 +541,13 @@ class ImageViewer(tk.Tk):
         self.display_masks()
         self.update_annotation_listbox()
 
-    def create_loading_screen(self):
+    def create_loading_screen(self, text):
         self.loading_screen = tk.Toplevel(self)
         self.loading_screen.title("Loading")
         self.loading_screen.geometry("200x100")
         self.loading_screen.resizable(False, False)
 
-        label = tk.Label(self.loading_screen, text="Running SAM, Please Wait.")
+        label = tk.Label(self.loading_screen, text=text)
         label.pack(pady=20)
 
     def load_existing_masks(self):
@@ -1040,7 +1048,7 @@ class ImageViewer(tk.Tk):
         self.save_current_annotations()
         path_to_weights = self.sam_weights_path
 
-        self.create_loading_screen()
+        self.create_loading_screen("Running SAM.\nThis may take some time...")
         self.update()
 
         output_dir = sam_main(
