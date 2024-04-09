@@ -576,9 +576,7 @@ class ImageViewer(tk.Tk):
             self.image_name = os.path.splitext(os.path.basename(image_path))[0]
             self.create_unique_image_folder()
             self.copy_image_to_folder()
-            image = cv2.imread(
-                os.path.join(self.image_folder, os.path.basename(image_path))
-            )
+            image = cv2.imread(os.path.join(self.cache_folder, os.path.basename(image_path)))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(image)
             self.opened_image = image
@@ -595,10 +593,12 @@ class ImageViewer(tk.Tk):
     def create_unique_image_folder(self):
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         self.image_folder = f"image_masks/{self.image_name}_{timestamp}"
+        self.cache_folder = f"cache/{self.image_name}_{timestamp}"
         os.makedirs(self.image_folder, exist_ok=True)
+        os.makedirs(self.cache_folder, exist_ok=True)
 
     def copy_image_to_folder(self):
-        shutil.copy2(self.image_path, self.image_folder)
+        shutil.copy2(self.image_path, self.cache_folder)
 
     def load_masks(self):
         self.masks = []
@@ -1215,7 +1215,7 @@ class ImageViewer(tk.Tk):
         self.update_annotation_listbox()
 
     def load_image_with_masks(self, image_path, masks_dir):
-        image = cv2.imread(image_path)
+        image = cv2.imread(os.path.join(self.cache_folder, os.path.basename(image_path)))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask_files = [
             mask for mask in os.listdir(masks_dir) if mask.startswith("mask_")
