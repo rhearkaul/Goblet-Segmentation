@@ -296,14 +296,12 @@ class ImageViewer(tk.Tk):
         self.config(menu=menubar)
 
         menu1 = tk.Menu(menubar, tearoff=0)
-        menu2 = tk.Menu(menubar, tearoff=0)
         menu3 = tk.Menu(menubar, tearoff=0)
         menu4 = tk.Menu(menubar, tearoff=0)
         menu5 = tk.Menu(menubar, tearoff=0)
 
         menu1.add_command(label="Open Image", command=self.open_image)
 
-        menu2.add_command(label="Placeholder 2")
         menu3.add_command(
             label="Watershed Settings", command=self.show_watershed_settings
         )
@@ -323,7 +321,6 @@ class ImageViewer(tk.Tk):
         )
 
         menubar.add_cascade(label="File", menu=menu1)
-        menubar.add_cascade(label="View", menu=menu2)
         menubar.add_cascade(label="Prompt Generation", menu=menu3)
         menubar.add_cascade(label="Segment", menu=menu4)
         menubar.add_cascade(label="Metrics", menu=menu5)
