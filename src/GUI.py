@@ -76,6 +76,12 @@ class ImageViewer(tk.Tk):
 
         self.multi_select_mode = False
 
+        # Minimap
+        self.minimap_window = None
+        self.minimap_canvas = None
+        self.minimap_image = None
+        self.minimap_rect = None
+
     def create_widgets(self, window_width, window_height):
 
         toolbar_frame = tk.Frame(self, bg="gray")
@@ -106,6 +112,10 @@ class ImageViewer(tk.Tk):
             select_toolbar_frame, text="Drag", command=self.toggle_drag_mode
         )
         self.drag_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        minimap_button = tk.Button(toolbar_frame, text="Minimap", command=self.toggle_minimap)
+        minimap_button.pack(side=tk.LEFT, padx=5, pady=5)
+
         # Calculate the sizes of function window and image display area
         function_window_width = int(window_width * 0.2)
         function_window_height = window_height - 80
@@ -161,6 +171,76 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+    def toggle_minimap(self):
+        if self.opened_image:
+            if not self.minimap_window or not self.minimap_window.winfo_exists():
+                self.create_minimap_window()
+            else:
+                self.minimap_window.destroy()
+                self.minimap_window = None
+                self.minimap_canvas = None
+                self.minimap_image = None
+                self.minimap_rect = None
+
+    def create_minimap_window(self):
+        # Calculate the minimap size based on the screen resolution
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        minimap_width = int(screen_width * 0.2)
+        minimap_height = int(screen_height * 0.2)
+
+        self.minimap_window = tk.Toplevel(self)
+        self.minimap_window.title("Minimap")
+        self.minimap_window.geometry(f"{minimap_width}x{minimap_height}")
+        self.minimap_window.resizable(False, False)
+
+        self.minimap_canvas = tk.Canvas(self.minimap_window, width=minimap_width, height=minimap_height)
+        self.minimap_canvas.pack()
+
+        # Resize the minimap image to fit the minimap window
+        minimap_image = self.opened_image.copy()
+        minimap_image = minimap_image.resize((minimap_width, minimap_height), resample=Image.BICUBIC)
+        self.minimap_image = ImageTk.PhotoImage(minimap_image)
+        self.minimap_canvas.create_image(0, 0, anchor=tk.NW, image=self.minimap_image)
+
+        # Calculate the box size and position based on the main canvas size
+        main_canvas_width = self.canvas.winfo_width()
+        main_canvas_height = self.canvas.winfo_height()
+        minimap_box_width = int(main_canvas_width * minimap_width / self.opened_image.width)
+        minimap_box_height = int(main_canvas_height * minimap_height / self.opened_image.height)
+        minimap_box_x = 0
+        minimap_box_y = 0
+
+        self.minimap_rect = self.minimap_canvas.create_rectangle(
+            minimap_box_x, minimap_box_y,
+            minimap_box_x + minimap_box_width, minimap_box_y + minimap_box_height,
+            outline="red"
+        )
+
+        self.minimap_window.bind("<Configure>", self.update_minimap_rect)
+        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
+
+    def update_minimap_rect(self, event):
+        if self.minimap_window and self.minimap_canvas and self.minimap_rect:
+            minimap_width = self.minimap_canvas.winfo_width()
+            minimap_height = self.minimap_canvas.winfo_height()
+            main_canvas_width = self.canvas.winfo_width()
+            main_canvas_height = self.canvas.winfo_height()
+
+            minimap_box_width = int(main_canvas_width * minimap_width / self.opened_image.width)
+            minimap_box_height = int(main_canvas_height * minimap_height / self.opened_image.height)
+
+            minimap_box_x = int(self.drag_coefficient_x * minimap_width / self.opened_image.width)
+            minimap_box_y = int(self.drag_coefficient_y * minimap_height / self.opened_image.height)
+
+            # Ensure the box doesn't exceed the minimap window
+            minimap_box_x = max(0, min(minimap_box_x, minimap_width - minimap_box_width))
+            minimap_box_y = max(0, min(minimap_box_y, minimap_height - minimap_box_height))
+
+            self.minimap_canvas.coords(self.minimap_rect,
+                                       minimap_box_x, minimap_box_y,
+                                       minimap_box_x + minimap_box_width, minimap_box_y + minimap_box_height)
+
 
     def toggle_multi_select_mode(self):
         self.multi_select_mode = not self.multi_select_mode
@@ -705,6 +785,7 @@ class ImageViewer(tk.Tk):
                 self.drag_start_y = event.y
                 self.drag_coefficient_x += delta_x
                 self.drag_coefficient_y += delta_y
+                self.update_minimap_rect(event)
             if self.box_select_mode:
                 if self.rect_id:
                     self.canvas.delete(self.rect_id)
