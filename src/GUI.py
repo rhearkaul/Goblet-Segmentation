@@ -189,56 +189,6 @@ class ImageViewer(tk.Tk):
             )
             self.canvas.image = photo
 
-            # Update the annotations based on the new scale factor
-            self.update_annotations_for_scale()
-
-    def update_annotations_for_scale(self):
-        for i, point in enumerate(self.points):
-            oval_id = self.point_ids[i]
-            self.canvas.coords(
-                oval_id,
-                point[0] * self.scale_factor + self.drag_coefficient_x - 2,
-                point[1] * self.scale_factor + self.drag_coefficient_y - 2,
-                point[0] * self.scale_factor + self.drag_coefficient_x + 2,
-                point[1] * self.scale_factor + self.drag_coefficient_y + 2,
-            )
-
-        for i, box in enumerate(self.boxes):
-            rect_id = self.box_ids[i]
-            self.canvas.coords(
-                rect_id,
-                box[0] * self.scale_factor + self.drag_coefficient_x,
-                box[1] * self.scale_factor + self.drag_coefficient_y,
-                box[2] * self.scale_factor + self.drag_coefficient_x,
-                box[3] * self.scale_factor + self.drag_coefficient_y,
-            )
-
-        for i, mask in enumerate(self.masks):
-            self.canvas.delete(f"mask_{i}")
-            mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
-            mask_rgba[..., :3] = [30, 144, 255]  # Blue color
-            mask_rgba[..., 3] = (mask > 0).astype(
-                np.uint8
-            ) * 128  # Set alpha channel based on mask
-            mask_image = Image.fromarray(mask_rgba, mode="RGBA")
-            mask_image = mask_image.resize(
-                (
-                    int(mask_image.width * self.scale_factor),
-                    int(mask_image.height * self.scale_factor),
-                )
-            )
-            mask_photo = ImageTk.PhotoImage(mask_image)
-            self.canvas.mask_images.append(
-                mask_photo
-            )  # Keep a reference to the mask photo
-            self.canvas.create_image(
-                self.drag_coefficient_x,
-                self.drag_coefficient_y,
-                anchor=tk.NW,
-                image=mask_photo,
-                tags=f"mask_{i}",
-            )
-
     def toggle_multi_select_mode(self):
         self.multi_select_mode = not self.multi_select_mode
         if self.multi_select_mode:
