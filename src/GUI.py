@@ -313,6 +313,10 @@ class ImageViewer(tk.Tk):
         watershed_settings_window = tk.Toplevel(self)
         watershed_settings_window.title("Watershed Settings")
 
+        warning_label = tk.Label(watershed_settings_window, text="Watershed are unstable, please consult manual.",
+                                 fg="red")
+        warning_label.pack(pady=10)
+
         # Create stain vector input
         stain_vector_label = tk.Label(watershed_settings_window, text="Stain Vector:")
         stain_vector_label.pack()
