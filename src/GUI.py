@@ -97,15 +97,15 @@ class ImageViewer(tk.Tk):
         select_toolbar_frame = tk.Frame(self, bg="lightgray")
         select_toolbar_frame.pack(side=tk.TOP, fill=tk.X)
 
-        self.box_select_button = tk.Button(
-            select_toolbar_frame, text="Box Select", command=self.toggle_box_select_mode
-        )
-        self.box_select_button.pack(side=tk.LEFT, padx=5, pady=5)
-
         self.drag_button = tk.Button(
             select_toolbar_frame, text="Drag", command=self.toggle_drag_mode
         )
         self.drag_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.box_select_button = tk.Button(
+            select_toolbar_frame, text="Box Select", command=self.toggle_box_select_mode
+        )
+        self.box_select_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.point_select_button = tk.Button(
             select_toolbar_frame,
