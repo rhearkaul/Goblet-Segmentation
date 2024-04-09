@@ -90,13 +90,18 @@ class ImageViewer(tk.Tk):
         self.minimap_drag_coefficient_y = 0
 
     def create_widgets(self, window_width, window_height):
-
+        self.manual_mask_button = tk.Button(
+            select_toolbar_frame,
+            text="Manual Mask",
+            command=self.toggle_manual_mask_mode,
+        )
         self.manual_mask_button.pack(side=tk.LEFT, padx=5, pady=5)
+
         self.drag_button = tk.Button(
             select_toolbar_frame, text="Drag", command=self.toggle_drag_mode
         )
         self.drag_button.pack(side=tk.LEFT, padx=5, pady=5)
-        
+
         toolbar_frame = tk.Frame(self, bg="gray")
         toolbar_frame.pack(side=tk.TOP, fill=tk.X)
 
@@ -114,13 +119,6 @@ class ImageViewer(tk.Tk):
             command=self.toggle_point_select_mode,
         )
         self.point_select_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-        self.manual_mask_button = tk.Button(
-            select_toolbar_frame,
-            text="Manual Mask",
-            command=self.toggle_manual_mask_mode,
-        )
-
 
         minimap_button = tk.Button(
             toolbar_frame, text="Toggle Minimap", command=self.toggle_minimap
