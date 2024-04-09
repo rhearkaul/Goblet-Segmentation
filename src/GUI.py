@@ -12,8 +12,12 @@ from PIL import Image, ImageTk
 
 from metrics import analyze_properties, get_prop
 from sam2 import sam_main
-from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
-                                 STAIN_VECTORS, generate_centroid)
+from watershed.watershed import (
+    INTENSITY_THRESHOLDS,
+    SIZE_THRESHOLDS,
+    STAIN_VECTORS,
+    generate_centroid,
+)
 
 
 class ImageViewer(tk.Tk):
@@ -87,6 +91,12 @@ class ImageViewer(tk.Tk):
 
     def create_widgets(self, window_width, window_height):
 
+        self.manual_mask_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.drag_button = tk.Button(
+            select_toolbar_frame, text="Drag", command=self.toggle_drag_mode
+        )
+        self.drag_button.pack(side=tk.LEFT, padx=5, pady=5)
+        
         toolbar_frame = tk.Frame(self, bg="gray")
         toolbar_frame.pack(side=tk.TOP, fill=tk.X)
 
@@ -110,13 +120,11 @@ class ImageViewer(tk.Tk):
             text="Manual Mask",
             command=self.toggle_manual_mask_mode,
         )
-        self.manual_mask_button.pack(side=tk.LEFT, padx=5, pady=5)
-        self.drag_button = tk.Button(
-            select_toolbar_frame, text="Drag", command=self.toggle_drag_mode
-        )
-        self.drag_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-        minimap_button = tk.Button(toolbar_frame, text="Full Image View", command=self.toggle_minimap)
+
+        minimap_button = tk.Button(
+            toolbar_frame, text="Toggle Minimap", command=self.toggle_minimap
+        )
         minimap_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         run_segmentation_all_button = tk.Button(
@@ -193,6 +201,7 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+
     def toggle_minimap(self):
         if self.opened_image:
             if not self.minimap_window or not self.minimap_window.winfo_exists():
@@ -216,12 +225,16 @@ class ImageViewer(tk.Tk):
         self.minimap_window.geometry(f"{minimap_width}x{minimap_height}")
         self.minimap_window.resizable(False, False)
 
-        self.minimap_canvas = tk.Canvas(self.minimap_window, width=minimap_width, height=minimap_height)
+        self.minimap_canvas = tk.Canvas(
+            self.minimap_window, width=minimap_width, height=minimap_height
+        )
         self.minimap_canvas.pack()
 
         # Resize the minimap image to fit the minimap window
         minimap_image = self.opened_image.copy()
-        minimap_image = minimap_image.resize((minimap_width, minimap_height), resample=Image.BICUBIC)
+        minimap_image = minimap_image.resize(
+            (minimap_width, minimap_height), resample=Image.BICUBIC
+        )
         self.minimap_image = ImageTk.PhotoImage(minimap_image)
         self.minimap_canvas.create_image(0, 0, anchor=tk.NW, image=self.minimap_image)
 
@@ -231,14 +244,18 @@ class ImageViewer(tk.Tk):
         frame_height = self.winfo_height() - canvas_y
 
         minimap_box_width = int(frame_width * minimap_width / self.opened_image.width)
-        minimap_box_height = int(frame_height * minimap_height / self.opened_image.height)
+        minimap_box_height = int(
+            frame_height * minimap_height / self.opened_image.height
+        )
         minimap_box_x = 0
         minimap_box_y = 0
 
         self.minimap_rect = self.minimap_canvas.create_rectangle(
-            minimap_box_x, minimap_box_y,
-            minimap_box_x + minimap_box_width, minimap_box_y + minimap_box_height,
-            outline="red"
+            minimap_box_x,
+            minimap_box_y,
+            minimap_box_x + minimap_box_width,
+            minimap_box_y + minimap_box_height,
+            outline="red",
         )
 
         self.minimap_window.bind("<Configure>", self.update_minimap_rect)
@@ -252,16 +269,31 @@ class ImageViewer(tk.Tk):
             frame_width = self.winfo_width() - canvas_x
             frame_height = self.winfo_height() - canvas_y
 
-            minimap_box_width = int(frame_width * minimap_width / self.opened_image.width)
-            minimap_box_height = int(frame_height * minimap_height / self.opened_image.height)
+            minimap_box_width = int(
+                frame_width * minimap_width / self.opened_image.width
+            )
+            minimap_box_height = int(
+                frame_height * minimap_height / self.opened_image.height
+            )
 
-            minimap_box_x = int(self.minimap_drag_coefficient_x * minimap_width / self.opened_image.width)
-            minimap_box_y = int(self.minimap_drag_coefficient_y * minimap_height / self.opened_image.height)
+            minimap_box_x = int(
+                self.minimap_drag_coefficient_x
+                * minimap_width
+                / self.opened_image.width
+            )
+            minimap_box_y = int(
+                self.minimap_drag_coefficient_y
+                * minimap_height
+                / self.opened_image.height
+            )
 
-            self.minimap_canvas.coords(self.minimap_rect,
-                                       minimap_box_x, minimap_box_y,
-                                       minimap_box_x + minimap_box_width, minimap_box_y + minimap_box_height)
-
+            self.minimap_canvas.coords(
+                self.minimap_rect,
+                minimap_box_x,
+                minimap_box_y,
+                minimap_box_x + minimap_box_width,
+                minimap_box_y + minimap_box_height,
+            )
 
     def toggle_multi_select_mode(self):
         self.multi_select_mode = not self.multi_select_mode
@@ -329,8 +361,11 @@ class ImageViewer(tk.Tk):
         watershed_settings_window = tk.Toplevel(self)
         watershed_settings_window.title("Watershed Settings")
 
-        warning_label = tk.Label(watershed_settings_window, text="Watershed are unstable, please consult manual.",
-                                 fg="red")
+        warning_label = tk.Label(
+            watershed_settings_window,
+            text="Watershed are unstable, please consult manual.",
+            fg="red",
+        )
         warning_label.pack(pady=10)
 
         # Create stain vector input
@@ -538,7 +573,7 @@ class ImageViewer(tk.Tk):
                     y + self.drag_coefficient_y - 2,
                     x + self.drag_coefficient_x + 2,
                     y + self.drag_coefficient_y + 2,
-                    fill="red"
+                    fill="red",
                 )
                 self.points.append((x, y))
                 self.point_ids.append(oval_id)
@@ -596,7 +631,9 @@ class ImageViewer(tk.Tk):
             self.image_name = os.path.splitext(os.path.basename(image_path))[0]
             self.create_unique_image_folder()
             self.copy_image_to_folder()
-            image = cv2.imread(os.path.join(self.cache_folder, os.path.basename(image_path)))
+            image = cv2.imread(
+                os.path.join(self.cache_folder, os.path.basename(image_path))
+            )
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(image)
             self.opened_image = image
@@ -790,8 +827,12 @@ class ImageViewer(tk.Tk):
             elif self.point_select_mode:
                 x = event.x
                 y = event.y
-                oval_id = self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill='red')
-                self.points.append((x - self.drag_coefficient_x, y - self.drag_coefficient_y))
+                oval_id = self.canvas.create_oval(
+                    x - 2, y - 2, x + 2, y + 2, fill="red"
+                )
+                self.points.append(
+                    (x - self.drag_coefficient_x, y - self.drag_coefficient_y)
+                )
                 self.point_ids.append(oval_id)
                 self.update_annotation_listbox()
             else:
@@ -923,9 +964,14 @@ class ImageViewer(tk.Tk):
         self.canvas.delete("highlight")  # Remove any existing highlight
         if point_index >= 0 and point_index < len(self.points):
             point = self.points[point_index]
-            self.canvas.create_oval(point[0] + self.drag_coefficient_x - 4, point[1] + self.drag_coefficient_y - 4,
-                                    point[0] + self.drag_coefficient_x + 4, point[1] + self.drag_coefficient_y + 4,
-                                    outline='yellow', tags="highlight")
+            self.canvas.create_oval(
+                point[0] + self.drag_coefficient_x - 4,
+                point[1] + self.drag_coefficient_y - 4,
+                point[0] + self.drag_coefficient_x + 4,
+                point[1] + self.drag_coefficient_y + 4,
+                outline="yellow",
+                tags="highlight",
+            )
 
     def highlight_box(self, box_index):
         self.canvas.delete("highlight")  # Remove any existing highlight
@@ -1009,14 +1055,18 @@ class ImageViewer(tk.Tk):
             selected_indices = []
             for i, box in enumerate(self.boxes):
                 if (
-                        box[0] + self.drag_coefficient_x <= x <= box[2] + self.drag_coefficient_x
-                        and box[1] + self.drag_coefficient_y <= y <= box[3] + self.drag_coefficient_y
+                    box[0] + self.drag_coefficient_x
+                    <= x
+                    <= box[2] + self.drag_coefficient_x
+                    and box[1] + self.drag_coefficient_y
+                    <= y
+                    <= box[3] + self.drag_coefficient_y
                 ):
                     selected_indices.append(len(self.points) + i)
             for i, point in enumerate(self.points):
                 if (
-                        abs(point[0] + self.drag_coefficient_x - x) <= 2
-                        and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                    abs(point[0] + self.drag_coefficient_x - x) <= 2
+                    and abs(point[1] + self.drag_coefficient_y - y) <= 2
                 ):
                     selected_indices.append(i)
             if selected_indices:
@@ -1025,8 +1075,12 @@ class ImageViewer(tk.Tk):
         else:
             for i, box in enumerate(self.boxes):
                 if (
-                        box[0] + self.drag_coefficient_x <= x <= box[2] + self.drag_coefficient_x
-                        and box[1] + self.drag_coefficient_y <= y <= box[3] + self.drag_coefficient_y
+                    box[0] + self.drag_coefficient_x
+                    <= x
+                    <= box[2] + self.drag_coefficient_x
+                    and box[1] + self.drag_coefficient_y
+                    <= y
+                    <= box[3] + self.drag_coefficient_y
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(len(self.points) + i)
@@ -1034,8 +1088,8 @@ class ImageViewer(tk.Tk):
                     return
             for i, point in enumerate(self.points):
                 if (
-                        abs(point[0] + self.drag_coefficient_x - x) <= 2
-                        and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                    abs(point[0] + self.drag_coefficient_x - x) <= 2
+                    and abs(point[1] + self.drag_coefficient_y - y) <= 2
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(i)
@@ -1043,9 +1097,10 @@ class ImageViewer(tk.Tk):
                     return
             for i, mask in enumerate(self.masks):
                 if (
-                        0 <= y - self.drag_coefficient_y < mask.shape[0]
-                        and 0 <= x - self.drag_coefficient_x < mask.shape[1]
-                        and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x] > 0
+                    0 <= y - self.drag_coefficient_y < mask.shape[0]
+                    and 0 <= x - self.drag_coefficient_x < mask.shape[1]
+                    and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x]
+                    > 0
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(
@@ -1238,7 +1293,9 @@ class ImageViewer(tk.Tk):
         self.update_annotation_listbox()
 
     def load_image_with_masks(self, image_path, masks_dir):
-        image = cv2.imread(os.path.join(self.cache_folder, os.path.basename(image_path)))
+        image = cv2.imread(
+            os.path.join(self.cache_folder, os.path.basename(image_path))
+        )
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask_files = [
             mask for mask in os.listdir(masks_dir) if mask.startswith("mask_")
