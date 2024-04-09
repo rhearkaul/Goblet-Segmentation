@@ -1187,6 +1187,9 @@ class ImageViewer(tk.Tk):
         image_path = os.path.join(masks_dir, "predicted_image.png")
         image, masks, mask_files = self.load_image_with_masks(image_path, masks_dir)
 
+        # Save the predicted_image.png to the cache folder
+        shutil.copy2(image_path, os.path.join(self.cache_folder, "predicted_image.png"))
+
         self.opened_image = Image.fromarray(image)
         photo = ImageTk.PhotoImage(self.opened_image)
         self.canvas.delete("all")

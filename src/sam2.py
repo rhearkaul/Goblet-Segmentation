@@ -61,8 +61,8 @@ def save_masks_and_ious(masks, iou_scores, image, output_dir):
         for i, iou in enumerate(iou_scores):
             writer.writerow([next_index + i, iou.item()])
 
-    # Save the predicted image
-    plt.imsave(os.path.join(output_dir, "predicted_image.png"), image)
+    # # Save the predicted image
+    # plt.imsave(os.path.join(output_dir, "predicted_image.png"), image)
 
 def sam_main(path_to_weights, annotations_filename='annotations.npz', image_folder="", model_size="H"):
     points, boxes, image = load_annotations(filename=annotations_filename)
