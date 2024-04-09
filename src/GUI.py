@@ -116,8 +116,27 @@ class ImageViewer(tk.Tk):
         )
         self.drag_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-        minimap_button = tk.Button(toolbar_frame, text="Minimap", command=self.toggle_minimap)
+        minimap_button = tk.Button(toolbar_frame, text="Full Image View", command=self.toggle_minimap)
         minimap_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        run_segmentation_all_button = tk.Button(
+            toolbar_frame,
+            text="Run Segmentation (All)",
+            command=self.run_sam_with_current_annotation,
+        )
+        run_segmentation_all_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        run_segmentation_selected_button = tk.Button(
+            toolbar_frame,
+            text="Run Segmentation (Selected)",
+            command=self.run_sam_with_selected_annotations,
+        )
+        run_segmentation_selected_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        run_analysis_button = tk.Button(
+            toolbar_frame, text="Run Analysis", command=self.run_analysis
+        )
+        run_analysis_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         # Calculate the sizes of function window and image display area
         function_window_width = int(window_width * 0.2)
