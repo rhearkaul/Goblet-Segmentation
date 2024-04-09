@@ -227,15 +227,15 @@ class ImageViewer(tk.Tk):
             main_canvas_width = self.canvas.winfo_width()
             main_canvas_height = self.canvas.winfo_height()
 
-            minimap_box_width = int(main_canvas_width * minimap_width / self.opened_image.width)
-            minimap_box_height = int(main_canvas_height * minimap_height / self.opened_image.height)
+            canvas_x, canvas_y = self.canvas.winfo_rootx(), self.canvas.winfo_rooty()
+            frame_width = self.winfo_width() - canvas_x
+            frame_height = self.winfo_height() - canvas_y
+
+            minimap_box_width = int(frame_width * minimap_width / self.opened_image.width)
+            minimap_box_height = int(frame_height * minimap_height / self.opened_image.height)
 
             minimap_box_x = int(self.drag_coefficient_x * minimap_width / self.opened_image.width)
             minimap_box_y = int(self.drag_coefficient_y * minimap_height / self.opened_image.height)
-
-            # Ensure the box doesn't exceed the minimap window
-            minimap_box_x = max(0, min(minimap_box_x, minimap_width - minimap_box_width))
-            minimap_box_y = max(0, min(minimap_box_y, minimap_height - minimap_box_height))
 
             self.minimap_canvas.coords(self.minimap_rect,
                                        minimap_box_x, minimap_box_y,
