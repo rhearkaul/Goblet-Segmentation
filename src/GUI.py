@@ -204,10 +204,12 @@ class ImageViewer(tk.Tk):
         self.minimap_canvas.create_image(0, 0, anchor=tk.NW, image=self.minimap_image)
 
         # Calculate the box size and position based on the main canvas size
-        main_canvas_width = self.canvas.winfo_width()
-        main_canvas_height = self.canvas.winfo_height()
-        minimap_box_width = int(main_canvas_width * minimap_width / self.opened_image.width)
-        minimap_box_height = int(main_canvas_height * minimap_height / self.opened_image.height)
+        canvas_x, canvas_y = self.canvas.winfo_rootx(), self.canvas.winfo_rooty()
+        frame_width = self.winfo_width() - canvas_x
+        frame_height = self.winfo_height() - canvas_y
+
+        minimap_box_width = int(frame_width * minimap_width / self.opened_image.width)
+        minimap_box_height = int(frame_height * minimap_height / self.opened_image.height)
         minimap_box_x = 0
         minimap_box_y = 0
 
@@ -224,9 +226,6 @@ class ImageViewer(tk.Tk):
         if self.minimap_window and self.minimap_canvas and self.minimap_rect:
             minimap_width = self.minimap_canvas.winfo_width()
             minimap_height = self.minimap_canvas.winfo_height()
-            main_canvas_width = self.canvas.winfo_width()
-            main_canvas_height = self.canvas.winfo_height()
-
             canvas_x, canvas_y = self.canvas.winfo_rootx(), self.canvas.winfo_rooty()
             frame_width = self.winfo_width() - canvas_x
             frame_height = self.winfo_height() - canvas_y
@@ -783,8 +782,8 @@ class ImageViewer(tk.Tk):
                 self.canvas.move("all", delta_x, delta_y)
                 self.drag_start_x = event.x
                 self.drag_start_y = event.y
-                self.drag_coefficient_x += delta_x
-                self.drag_coefficient_y += delta_y
+                self.drag_coefficient_x -= delta_x
+                self.drag_coefficient_y -= delta_y
                 self.update_minimap_rect(event)
             if self.box_select_mode:
                 if self.rect_id:
