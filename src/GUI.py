@@ -177,9 +177,6 @@ class ImageViewer(tk.Tk):
         )
         delete_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
-        # save_button = tk.Button(self.annotation_window_frame, text="Save Annotations", command=self.save_annotations)
-        # save_button.pack(side=tk.BOTTOM, padx=5, pady=5)
-
         unselect_button = tk.Button(
             self.annotation_window_frame,
             text="Unselect",
@@ -187,12 +184,14 @@ class ImageViewer(tk.Tk):
         )
         unselect_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
-        multi_select_button = tk.Button(
+        self.multi_select_mode = False
+        self.multi_select_button = tk.Button(
             self.annotation_window_frame,
             text="Multi Select",
             command=self.toggle_multi_select_mode,
         )
-        multi_select_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+        self.multi_select_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+        self.multi_select_button.configure(bg="lightgray" if not self.multi_select_mode else "lightblue")
 
         self.image_viewer_frame = tk.Frame(
             self, bg="white", width=image_display_width, height=image_display_height
@@ -303,8 +302,10 @@ class ImageViewer(tk.Tk):
         self.multi_select_mode = not self.multi_select_mode
         if self.multi_select_mode:
             self.annotation_listbox.config(selectmode=tk.EXTENDED)
+            self.multi_select_button.configure(bg="lightblue")  # Change background color when enabled
         else:
             self.annotation_listbox.config(selectmode=tk.BROWSE)
+            self.multi_select_button.configure(bg="lightgray")  # Change background color when disabled
 
     def toggle_drag_mode(self):
         if self.opened_image:
@@ -450,13 +451,6 @@ class ImageViewer(tk.Tk):
         min_area_entry = tk.Entry(watershed_settings_window, textvariable=min_area_var)
         min_area_entry.pack()
 
-        # Create dist thresh input
-        # dist_thresh_label = tk.Label(watershed_settings_window, text="Distance Threshold:")
-        # dist_thresh_label.pack()
-        # dist_thresh_var = tk.DoubleVar()
-        # dist_thresh_var.set(30)  # Set the initial value
-        # dist_thresh_entry = tk.Entry(watershed_settings_window, textvariable=dist_thresh_var)
-        # dist_thresh_entry.pack()
 
         # Create save button
         def save_settings():
@@ -794,14 +788,12 @@ class ImageViewer(tk.Tk):
             self.manual_mask_mode = not self.manual_mask_mode
             self.box_select_mode = False
             self.point_select_mode = False
+            self.drag_mode = False
             if self.manual_mask_mode:
                 self.manual_mask_button.configure(bg="lightblue")
                 self.box_select_button.configure(bg="lightgray")
                 self.point_select_button.configure(bg="lightgray")
-                # Clean up box select mode
-                if self.rect_id:
-                    self.canvas.delete(self.rect_id)
-                    self.rect_id = None
+                self.drag_button.configure(bg="lightgray")
             else:
                 self.manual_mask_button.configure(bg="lightgray")
         else:
@@ -833,15 +825,13 @@ class ImageViewer(tk.Tk):
         if self.opened_image:
             self.box_select_mode = not self.box_select_mode
             self.point_select_mode = False
-            self.manual_mask_mode = False  # Reset manual mask mode
+            self.drag_mode = False
+            self.manual_mask_mode = False
             if self.box_select_mode:
                 self.box_select_button.configure(bg="lightblue")
                 self.point_select_button.configure(bg="lightgray")
-                self.manual_mask_button.configure(
-                    bg="lightgray"
-                )  # Reset manual mask button color
-                self.canvas.delete("manual_mask")  # Clear manual mask drawing
-                self.manual_mask_path = []  # Reset manual mask path
+                self.drag_button.configure(bg="lightgray")
+                self.manual_mask_button.configure(bg="lightgray")
             else:
                 self.box_select_button.configure(bg="lightgray")
         else:
@@ -851,15 +841,13 @@ class ImageViewer(tk.Tk):
         if self.opened_image:
             self.point_select_mode = not self.point_select_mode
             self.box_select_mode = False
-            self.manual_mask_mode = False  # Reset manual mask mode
+            self.drag_mode = False
+            self.manual_mask_mode = False
             if self.point_select_mode:
                 self.point_select_button.configure(bg="lightblue")
                 self.box_select_button.configure(bg="lightgray")
-                self.manual_mask_button.configure(
-                    bg="lightgray"
-                )  # Reset manual mask button color
-                self.canvas.delete("manual_mask")  # Clear manual mask drawing
-                self.manual_mask_path = []  # Reset manual mask path
+                self.drag_button.configure(bg="lightgray")
+                self.manual_mask_button.configure(bg="lightgray")
             else:
                 self.point_select_button.configure(bg="lightgray")
         else:
@@ -1234,42 +1222,6 @@ class ImageViewer(tk.Tk):
             self.canvas.image = photo
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
 
-    def loadAnnotations(self, annotation_file):
-        # Load annotations from a given file
-        if os.path.exists(annotation_file):
-            data = np.load(annotation_file, allow_pickle=True)
-            loaded_points = data["points"]
-            loaded_boxes = data["boxes"]
-
-            # Clear existing annotations
-            for point_id in self.point_ids:
-                self.canvas.delete(point_id)
-            for box_id in self.box_ids:
-                self.canvas.delete(box_id)
-
-            # Clear the lists
-            self.points.clear()
-            self.boxes.clear()
-            self.point_ids.clear()
-            self.box_ids.clear()
-
-            # Load new annotations
-            for point in loaded_points:
-                oval_id = self.canvas.create_oval(
-                    point[0] - 2, point[1] - 2, point[0] + 2, point[1] + 2, fill="red"
-                )
-                self.points.append((point[0], point[1]))
-                self.point_ids.append(oval_id)
-
-            for box in loaded_boxes:
-                rect_id = self.canvas.create_rectangle(
-                    box[0], box[1], box[2], box[3], outline="green"
-                )
-                self.boxes.append((box[0], box[1], box[2], box[3]))
-                self.box_ids.append(rect_id)
-        else:
-            logging.warning(f"Annotation file {annotation_file} not found.")
-
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
         path_to_weights = self.sam_weights_path
@@ -1374,13 +1326,6 @@ class ImageViewer(tk.Tk):
             if not prop_df.empty:
                 result = analyze_properties(prop_df, self.pixel_to_unit_scale)
                 results.append(result)
-
-        # Save results to a CSV file with a timestamp
-        # timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-
-        # results_file = os.path.join(
-        #     self.image_folder, f"analysis_results_{timestamp}.csv"
-        # )
 
         combined_results = pd.concat(results, axis=1).T.reset_index(drop=True)
 
