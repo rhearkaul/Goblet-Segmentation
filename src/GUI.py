@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-import time
 import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog
@@ -10,13 +9,12 @@ from xml.etree import ElementTree as ET
 import cv2
 import numpy as np
 import pandas as pd
-from aicspylibczi import CziFile
 from PIL import Image, ImageTk
+from aicspylibczi import CziFile
 
-from src.sam.sam import SAModel, SAModelType
-
-from metrics import analyze_properties, get_prop,detect_outliers
+from metrics import analyze_properties, get_prop, detect_outliers
 from sam2 import sam_main
+from src.sam.sam import SAModel, SAModelType
 from watershed.watershed import (
     INTENSITY_THRESHOLDS,
     SIZE_THRESHOLDS,
@@ -256,6 +254,7 @@ class ImageViewer(tk.Tk):
 
         # Reload the remaining masks
         self.load_masks()
+
     def toggle_minimap(self):
         if self.opened_image:
             if not self.minimap_window or not self.minimap_window.winfo_exists():
@@ -502,7 +501,6 @@ class ImageViewer(tk.Tk):
         min_area_entry = tk.Entry(watershed_settings_window, textvariable=min_area_var)
         min_area_entry.pack()
 
-
         # Create save button
         def save_settings():
             stain_vector_index = stain_vector_var.get()
@@ -710,7 +708,7 @@ class ImageViewer(tk.Tk):
                 # resolution conversion
                 if node_dist_x:
                     self.pixel_to_unit_scale = (
-                        float(node_dist_x.find("Value").text) * 1e6
+                            float(node_dist_x.find("Value").text) * 1e6
                     )
 
                 logging.warning(
@@ -763,8 +761,8 @@ class ImageViewer(tk.Tk):
             f
             for f in all_files
             if not f.startswith(self.image_name)
-            and not f.startswith("predicted_")
-            and not f.startswith("mask_")
+               and not f.startswith("predicted_")
+               and not f.startswith("mask_")
         ]
         mask_files = sorted(
             mask_files,
@@ -856,7 +854,7 @@ class ImageViewer(tk.Tk):
             mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
             mask_rgba[..., :3] = [30, 144, 255]  # Blue color
             mask_rgba[..., 3] = (
-                binary_mask.astype(np.uint8) * 128
+                    binary_mask.astype(np.uint8) * 128
             )  # Set alpha channel based on mask
 
             mask_image = Image.fromarray(mask_rgba, mode="RGBA")
@@ -1147,18 +1145,18 @@ class ImageViewer(tk.Tk):
             selected_indices = []
             for i, box in enumerate(self.boxes):
                 if (
-                    box[0] + self.drag_coefficient_x
-                    <= x
-                    <= box[2] + self.drag_coefficient_x
-                    and box[1] + self.drag_coefficient_y
-                    <= y
-                    <= box[3] + self.drag_coefficient_y
+                        box[0] + self.drag_coefficient_x
+                        <= x
+                        <= box[2] + self.drag_coefficient_x
+                        and box[1] + self.drag_coefficient_y
+                        <= y
+                        <= box[3] + self.drag_coefficient_y
                 ):
                     selected_indices.append(len(self.points) + i)
             for i, point in enumerate(self.points):
                 if (
-                    abs(point[0] + self.drag_coefficient_x - x) <= 2
-                    and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                        abs(point[0] + self.drag_coefficient_x - x) <= 2
+                        and abs(point[1] + self.drag_coefficient_y - y) <= 2
                 ):
                     selected_indices.append(i)
             if selected_indices:
@@ -1167,12 +1165,12 @@ class ImageViewer(tk.Tk):
         else:
             for i, box in enumerate(self.boxes):
                 if (
-                    box[0] + self.drag_coefficient_x
-                    <= x
-                    <= box[2] + self.drag_coefficient_x
-                    and box[1] + self.drag_coefficient_y
-                    <= y
-                    <= box[3] + self.drag_coefficient_y
+                        box[0] + self.drag_coefficient_x
+                        <= x
+                        <= box[2] + self.drag_coefficient_x
+                        and box[1] + self.drag_coefficient_y
+                        <= y
+                        <= box[3] + self.drag_coefficient_y
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(len(self.points) + i)
@@ -1180,8 +1178,8 @@ class ImageViewer(tk.Tk):
                     return
             for i, point in enumerate(self.points):
                 if (
-                    abs(point[0] + self.drag_coefficient_x - x) <= 2
-                    and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                        abs(point[0] + self.drag_coefficient_x - x) <= 2
+                        and abs(point[1] + self.drag_coefficient_y - y) <= 2
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(i)
@@ -1189,10 +1187,10 @@ class ImageViewer(tk.Tk):
                     return
             for i, mask in enumerate(self.masks):
                 if (
-                    0 <= y - self.drag_coefficient_y < mask.shape[0]
-                    and 0 <= x - self.drag_coefficient_x < mask.shape[1]
-                    and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x]
-                    > 0
+                        0 <= y - self.drag_coefficient_y < mask.shape[0]
+                        and 0 <= x - self.drag_coefficient_x < mask.shape[1]
+                        and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x]
+                        > 0
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(
