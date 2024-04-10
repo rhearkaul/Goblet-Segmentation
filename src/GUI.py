@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import time
@@ -319,7 +320,7 @@ class ImageViewer(tk.Tk):
                 self.drag_button.configure(bg="lightgray")
                 self.canvas.config(cursor="")
         else:
-            print("No image opened. Please open an image first.")
+            logging.warning("No image opened. Please open an image first.")
 
     def update_brush_size(self, value):
         self.brush_size = int(value)
@@ -472,7 +473,7 @@ class ImageViewer(tk.Tk):
                     # "dist_thresh": dist_thresh_var.get()
                 }
             else:
-                print(f"Invalid stain vector index: {stain_vector_index}")
+                logging.warning(f"Invalid stain vector index: {stain_vector_index}")
 
         save_button = tk.Button(
             watershed_settings_window, text="Save", command=save_settings
@@ -493,7 +494,9 @@ class ImageViewer(tk.Tk):
         ]
 
         if not selected_points and not selected_boxes:
-            print("No annotations selected. Please select at least one annotation.")
+            logging.warning(
+                "No annotations selected. Please select at least one annotation."
+            )
             return
 
         self.save_selected_annotations(selected_points, selected_boxes)
@@ -508,7 +511,7 @@ class ImageViewer(tk.Tk):
             image_folder=self.image_folder,
             model_size=self.sam_model_size,
         )
-        print("SAM function executed with selected annotations.")
+        logging.info("Segmentation completed with selected annotations.")
 
         self.loading_screen.destroy()
 
@@ -538,9 +541,13 @@ class ImageViewer(tk.Tk):
                 boxes=boxes_array,
                 image_path=self.image_path,
             )
-            print(f"Selected annotations saved successfully as {default_filename}.")
+            logging.info(
+                f"Selected annotations saved successfully as {default_filename}."
+            )
         else:
-            print("No image opened. Please open an image before saving annotations.")
+            logging.warning(
+                "No image opened. Please open an image before saving annotations."
+            )
 
     def run_watershed(self):
         # Create loading window
@@ -583,7 +590,7 @@ class ImageViewer(tk.Tk):
 
             self.loading_screen.destroy()
         else:
-            print("No image opened. Please open an image first.")
+            logging.warning("No image opened. Please open an image first.")
 
     def show_sam_settings(self):
         sam_settings_window = tk.Toplevel(self)
@@ -654,11 +661,11 @@ class ImageViewer(tk.Tk):
             self.canvas.image = photo
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
             self.clear_annotations()
-            print(f"Image opened: {image_path}")
+            logging.info(f"Image opened: {image_path}")
         else:
             self.opened_image = None
             self.canvas.delete("all")
-            print("No image selected.")
+            logging.warning("No image selected.")
 
     def create_unique_image_folder(self):
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -765,7 +772,7 @@ class ImageViewer(tk.Tk):
             else:
                 self.manual_mask_button.configure(bg="lightgray")
         else:
-            print("No image opened. Please open an image first.")
+            logging.warning("No image opened. Please open an image first.")
 
     def display_masks(self):
         for i, mask in enumerate(self.masks):
@@ -805,7 +812,7 @@ class ImageViewer(tk.Tk):
             else:
                 self.box_select_button.configure(bg="lightgray")
         else:
-            print("No image opened. Please open an image first.")
+            logging.warning("No image opened. Please open an image first.")
 
     def toggle_point_select_mode(self):
         if self.opened_image:
@@ -823,7 +830,7 @@ class ImageViewer(tk.Tk):
             else:
                 self.point_select_button.configure(bg="lightgray")
         else:
-            print("No image opened. Please open an image first.")
+            logging.warning("No image opened. Please open an image first.")
 
     def on_canvas_click(self, event):
         if self.opened_image:
@@ -1178,9 +1185,11 @@ class ImageViewer(tk.Tk):
                 boxes=boxes_array,
                 image_path=self.image_path,
             )
-            print(f"Annotations saved successfully as {default_filename}.")
+            logging.info(f"Annotations saved successfully as {default_filename}.")
         else:
-            print("No image opened. Please open an image before saving annotations.")
+            logging.warning(
+                "No image opened. Please open an image before saving annotations."
+            )
 
     def clear_annotations(self):
         self.points = []
@@ -1226,7 +1235,7 @@ class ImageViewer(tk.Tk):
                 self.boxes.append((box[0], box[1], box[2], box[3]))
                 self.box_ids.append(rect_id)
         else:
-            print(f"Annotation file {annotation_file} not found.")
+            logging.warning(f"Annotation file {annotation_file} not found.")
 
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
@@ -1241,7 +1250,7 @@ class ImageViewer(tk.Tk):
             image_folder=self.image_folder,
             model_size=self.sam_model_size,
         )
-        print("SAM function executed with current annotation.")
+        logging.info("Segmentation completed with all annotations.")
 
         self.loading_screen.destroy()
 
@@ -1321,7 +1330,7 @@ class ImageViewer(tk.Tk):
 
     def run_analysis(self):
         if not self.masks:
-            print("No masks found. Please run SAM first.")
+            logging.warning("No masks found. Please run SAM first.")
             return
 
         binary_masks = [mask > 0 for mask in self.masks]
@@ -1366,7 +1375,7 @@ class ImageViewer(tk.Tk):
         if csv_output_folder:
             combined_results.to_csv(csv_output_folder, index=False)
 
-            print(f"Analysis results saved to {csv_output_folder}")
+            logging.info(f"Analysis results saved to {csv_output_folder}")
             print("Analysis Results:")
             for i, result in enumerate(results):
                 print(f"Mask {i + 1}:")
