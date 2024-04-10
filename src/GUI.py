@@ -759,14 +759,12 @@ class ImageViewer(tk.Tk):
             self.manual_mask_mode = not self.manual_mask_mode
             self.box_select_mode = False
             self.point_select_mode = False
+            self.drag_mode = False
             if self.manual_mask_mode:
                 self.manual_mask_button.configure(bg="lightblue")
                 self.box_select_button.configure(bg="lightgray")
                 self.point_select_button.configure(bg="lightgray")
-                # Clean up box select mode
-                if self.rect_id:
-                    self.canvas.delete(self.rect_id)
-                    self.rect_id = None
+                self.drag_button.configure(bg="lightgray")
             else:
                 self.manual_mask_button.configure(bg="lightgray")
         else:
@@ -798,15 +796,13 @@ class ImageViewer(tk.Tk):
         if self.opened_image:
             self.box_select_mode = not self.box_select_mode
             self.point_select_mode = False
-            self.manual_mask_mode = False  # Reset manual mask mode
+            self.drag_mode = False
+            self.manual_mask_mode = False
             if self.box_select_mode:
                 self.box_select_button.configure(bg="lightblue")
                 self.point_select_button.configure(bg="lightgray")
-                self.manual_mask_button.configure(
-                    bg="lightgray"
-                )  # Reset manual mask button color
-                self.canvas.delete("manual_mask")  # Clear manual mask drawing
-                self.manual_mask_path = []  # Reset manual mask path
+                self.drag_button.configure(bg="lightgray")
+                self.manual_mask_button.configure(bg="lightgray")
             else:
                 self.box_select_button.configure(bg="lightgray")
         else:
@@ -816,15 +812,13 @@ class ImageViewer(tk.Tk):
         if self.opened_image:
             self.point_select_mode = not self.point_select_mode
             self.box_select_mode = False
-            self.manual_mask_mode = False  # Reset manual mask mode
+            self.drag_mode = False
+            self.manual_mask_mode = False
             if self.point_select_mode:
                 self.point_select_button.configure(bg="lightblue")
                 self.box_select_button.configure(bg="lightgray")
-                self.manual_mask_button.configure(
-                    bg="lightgray"
-                )  # Reset manual mask button color
-                self.canvas.delete("manual_mask")  # Clear manual mask drawing
-                self.manual_mask_path = []  # Reset manual mask path
+                self.drag_button.configure(bg="lightgray")
+                self.manual_mask_button.configure(bg="lightgray")
             else:
                 self.point_select_button.configure(bg="lightgray")
         else:
