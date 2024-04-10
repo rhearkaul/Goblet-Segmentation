@@ -1255,8 +1255,8 @@ class ImageViewer(tk.Tk):
         mask_files = [f for f in os.listdir(output_dir) if f.startswith("mask_")]
         for i, mask_file in enumerate(mask_files):
             src_path = os.path.join(output_dir, mask_file)
-        dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
-        shutil.copy2(src_path, dst_path)
+            dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
+            shutil.copy2(src_path, dst_path)
 
         # Remove the original "mask_*.png" files
         for mask_file in mask_files:
@@ -1303,8 +1303,8 @@ class ImageViewer(tk.Tk):
         mask_files = [f for f in os.listdir(output_dir) if f.startswith("mask_")]
         for i, mask_file in enumerate(mask_files):
             src_path = os.path.join(output_dir, mask_file)
-        dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
-        shutil.copy2(src_path, dst_path)
+            dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
+            shutil.copy2(src_path, dst_path)
 
         # Remove the original "mask_*.png" files
         for mask_file in mask_files:
