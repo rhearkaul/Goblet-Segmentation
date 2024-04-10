@@ -1236,7 +1236,7 @@ class ImageViewer(tk.Tk):
         self.save_current_annotations()
         path_to_weights = self.sam_weights_path
 
-        self.create_loading_screen("Running SAM.This may take sometime...")
+        self.create_loading_screen("Running SAM.\nThis may take sometime...")
         self.update()
 
         output_dir = sam_main(
@@ -1284,7 +1284,7 @@ class ImageViewer(tk.Tk):
         self.save_selected_annotations(selected_points, selected_boxes)
         path_to_weights = self.sam_weights_path
 
-        self.create_loading_screen("Running SAM.This may take sometime...")
+        self.create_loading_screen("Running SAM.\nThis may take sometime...")
         self.update()
 
         output_dir = sam_main(
