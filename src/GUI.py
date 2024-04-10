@@ -15,7 +15,7 @@ from PIL import Image, ImageTk
 
 from src.sam.sam import SAModel, SAModelType
 
-from metrics import analyze_properties, get_prop
+from metrics import analyze_properties, get_prop,detect_outliers
 from sam2 import sam_main
 from watershed.watershed import (
     INTENSITY_THRESHOLDS,
@@ -154,6 +154,13 @@ class ImageViewer(tk.Tk):
         )
         run_analysis_button.pack(side=tk.LEFT, padx=5, pady=5)
 
+        remove_bad_masks_button = tk.Button(
+            toolbar_frame,
+            text="Remove Bad Masks",
+            command=self.remove_bad_masks,
+        )
+        remove_bad_masks_button.pack(side=tk.LEFT, padx=5, pady=5)
+
         # Calculate the sizes of function window and image display area
         function_window_width = int(window_width * 0.2)
         function_window_height = window_height - 80
@@ -209,6 +216,46 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
 
+    def remove_bad_masks(self):
+        if not self.masks:
+            logging.warning("No masks found. Please run analysis first.")
+            return
+
+        # Run the analysis to get the data frame
+        binary_masks = [mask > 0 for mask in self.masks]
+        results = []
+        for binary_mask in binary_masks:
+            prop_df = get_prop(binary_mask)
+            if not prop_df.empty:
+                result = analyze_properties(prop_df, self.pixel_to_unit_scale)
+                results.append(result)
+
+        combined_results = pd.concat(results, axis=1).T.reset_index(drop=True)
+
+        # Detect outliers using the detect_outliers function from metrics.py
+        inliers, outliers = detect_outliers(combined_results["area"], alpha=3)
+
+        print("Inliers (Good Masks):")
+        print(inliers)
+        print("\nOutliers (Bad Masks):")
+        print(outliers)
+
+        # Remove the outliers (bad masks) from the file system
+        removed_masks = []
+        for i, mask_file in enumerate(self.mask_files):
+            if i in outliers.index:
+                mask_path = os.path.join(self.image_folder, mask_file)
+                os.remove(mask_path)
+                removed_masks.append(mask_file)
+                print(f"Removed mask: {mask_file}")
+
+        if removed_masks:
+            print(f"\nRemoved {len(removed_masks)} masks: {', '.join(removed_masks)}")
+        else:
+            print("No masks removed.")
+
+        # Reload the remaining masks
+        self.load_masks()
     def toggle_minimap(self):
         if self.opened_image:
             if not self.minimap_window or not self.minimap_window.winfo_exists():

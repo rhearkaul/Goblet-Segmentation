@@ -126,7 +126,15 @@ def detect_outliers(data: pd.DataFrame | list, alpha: float = 3):
         of pd.DataFrames containing inliers and outliers, respectively.
     """
     df = pd.DataFrame(data)
+    if len(df) <= 1:
+        # Return the entire DataFrame as inliers if there's only one or no data points
+        return df, pd.DataFrame()
+
     z_scores = (df - df.mean()) / df.std()
     filter = abs(z_scores) < alpha
 
-    return df[filter], df[~filter]
+    inliers = df[filter]
+    outliers = df[~filter]
+
+    return inliers, outliers
+
