@@ -15,8 +15,14 @@ from PIL import Image, ImageTk
 
 from metrics import analyze_properties, get_prop
 from sam2 import sam_main
-from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
-                                 STAIN_VECTORS, generate_centroid)
+from watershed.watershed import (
+    INTENSITY_THRESHOLDS,
+    SIZE_THRESHOLDS,
+    STAIN_VECTORS,
+    generate_centroid,
+)
+
+logging.basicConfig(level=logging.INFO)
 
 
 class ImageViewer(tk.Tk):
@@ -636,24 +642,53 @@ class ImageViewer(tk.Tk):
             self.create_unique_image_folder()
             self.copy_image_to_folder()
 
+            self.pixel_to_unit_scale = 1
+
             # Special processing for .czi files
             if image_path.endswith(".czi"):
-                self.czi = CziFile(self.image_path)
+                czi = CziFile(self.image_path)
                 # image is in ((time, Y, X, channel), metadata) format
-                image = self.czi.read_image()[0][-1, :]
+                image = czi.read_image()[0][-1, :]
 
                 # normalize to 255 (data appears to be in uint16)
                 image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+
+                # Set a default resolution to x=y=1 if not available
+
+                metadata = czi.meta
+                tree = ET.ElementTree(metadata)
+                node_dist_x = tree.find(".//Distance[@Id='X']")
+
+                # x=y assumed to be same for this impl
+                # node_dist_y = tree.find(".//Distance[@Id='Y']")
+
+                # resolution conversion
+                if node_dist_x:
+                    self.pixel_to_unit_scale = (
+                        float(node_dist_x.find("Value").text) * 1e6
+                    )
+
+                logging.warning(
+                    f"Pixel-to-measurement scale is set to {self.pixel_to_unit_scale}."
+                )
+
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                image = Image.fromarray(image)
             else:
-                self.czi = None
-                image = cv2.imread(
+                image = Image.open(
                     os.path.join(self.cache_folder, os.path.basename(image_path))
                 )
-                logging.warning("Non-CZI file selected, pixel-to-measurement scale is set 1 during analysis.")
 
-            self.pixel_to_unit_scale = 1
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image = Image.fromarray(image)
+                self.pixel_to_unit_scale, _ = image.info.get("resolution", (1, 1))
+                self.pixel_to_unit_scale = 1 / float(self.pixel_to_unit_scale)
+
+                logging.info(
+                    (
+                        "Non-CZI file selected,"
+                        f"pixel-to-measurement scale is set to {self.pixel_to_unit_scale}."
+                    )
+                )
+
             self.opened_image = image
             photo = ImageTk.PhotoImage(image)
             self.canvas.image = photo
@@ -1332,20 +1367,6 @@ class ImageViewer(tk.Tk):
             return
 
         binary_masks = [mask > 0 for mask in self.masks]
-
-        # Set a default resolution to x=y=1 if not available
-        if self.czi:
-            metadata = self.czi.meta
-            tree = ET.ElementTree(metadata)
-            node_dist_x = tree.find(".//Distance[@Id='X']")
-
-            # x=y assumed to be same for this impl
-            # node_dist_y = tree.find(".//Distance[@Id='Y']")
-
-            # resolution conversion
-
-            if node_dist_x:
-                self.pixel_to_unit_scale = float(node_dist_x.find("Value").text) * 1e6
 
         results = []
         for binary_mask in binary_masks:
