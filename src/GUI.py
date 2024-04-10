@@ -50,8 +50,8 @@ class ImageViewer(tk.Tk):
         self.box_ids = []
         self.brush_size = 10  # Default brush size
 
-        self.sam_model_size = "H"
-        self.sam_weights_path = "sam_vit_h_4b8939.pth"
+        self.sam_model_size = "L"
+        self.sam_weights_path = "sam_vit_l_0b3195.pth"
 
         self.watershed_settings = {
             "stain_vector": 0,
