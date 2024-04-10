@@ -181,12 +181,14 @@ class ImageViewer(tk.Tk):
         )
         unselect_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
-        multi_select_button = tk.Button(
+        self.multi_select_mode = False
+        self.multi_select_button = tk.Button(
             self.annotation_window_frame,
             text="Multi Select",
             command=self.toggle_multi_select_mode,
         )
-        multi_select_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+        self.multi_select_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+        self.multi_select_button.configure(bg="lightgray" if not self.multi_select_mode else "lightblue")
 
         self.image_viewer_frame = tk.Frame(
             self, bg="white", width=image_display_width, height=image_display_height
@@ -297,8 +299,10 @@ class ImageViewer(tk.Tk):
         self.multi_select_mode = not self.multi_select_mode
         if self.multi_select_mode:
             self.annotation_listbox.config(selectmode=tk.EXTENDED)
+            self.multi_select_button.configure(bg="lightblue")  # Change background color when enabled
         else:
             self.annotation_listbox.config(selectmode=tk.BROWSE)
+            self.multi_select_button.configure(bg="lightgray")  # Change background color when disabled
 
     def toggle_drag_mode(self):
         if self.opened_image:
