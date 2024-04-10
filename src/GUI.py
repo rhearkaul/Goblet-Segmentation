@@ -649,6 +649,7 @@ class ImageViewer(tk.Tk):
                 image = cv2.imread(
                     os.path.join(self.cache_folder, os.path.basename(image_path))
                 )
+                logging.warning("Non-CZI file selected, pixel-to-measurement scale is set 1 during analysis.")
 
             self.pixel_to_unit_scale = 1
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
