@@ -4,10 +4,11 @@ import time
 import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog
-
+from xml.etree import ElementTree as ET
 import cv2
 import numpy as np
 import pandas as pd
+from aicspylibczi import CziFile
 from PIL import Image, ImageTk
 
 from metrics import analyze_properties, get_prop
@@ -623,7 +624,7 @@ class ImageViewer(tk.Tk):
 
     def open_image(self):
         image_path = filedialog.askopenfilename(
-            filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.tif;*.tiff")]
+            filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.czi")]
         )
         if image_path:
             self.image_path = image_path
@@ -1313,7 +1314,23 @@ class ImageViewer(tk.Tk):
         binary_masks = [mask > 0 for mask in self.masks]
 
         # Set a default resolution to x=y=1 if not available
-        res_x, res_y = self.opened_image.info.get("resolution", (1, 1))
+        try:
+            czi = CziFile(self.image_path)
+        except RuntimeError:
+            czi = None
+            print("Not valid czi file, pixel conversion may not be accurate.")
+        else:
+            metadata = czi.meta
+            tree = ET.ElementTree(metadata)
+            node_dist_x = tree.find(".//Distance[@Id='X']")
+            # x=y assumed to be same for this impl
+            # node_dist_y = tree.find(".//Distance[@Id='Y']") 
+
+            # resolution conversion
+            res_x = float(node_dist_x.find("Value").text) * 1E6 if node_dist_x else None 
+                
+        if not res_x:
+            res_x, _ = self.opened_image.info.get("resolution", (1, 1))
 
         results = []
         for binary_mask in binary_masks:
