@@ -13,6 +13,8 @@ import pandas as pd
 from aicspylibczi import CziFile
 from PIL import Image, ImageTk
 
+from src.sam.sam import SAModel, SAModelType
+
 from metrics import analyze_properties, get_prop
 from sam2 import sam_main
 from watershed.watershed import (
@@ -93,6 +95,8 @@ class ImageViewer(tk.Tk):
 
         self.minimap_drag_coefficient_x = 0
         self.minimap_drag_coefficient_y = 0
+
+        self.sam = None
 
     def create_widgets(self, window_width, window_height):
 
@@ -1223,10 +1227,16 @@ class ImageViewer(tk.Tk):
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
 
     def run_sam_with_current_annotation(self):
+        if self.sam is None:
+            self.sam = SAModel()
+            model_type = SAModelType.SAM_VIT_L if self.sam_model_size == "L" else SAModelType.SAM_VIT_B if self.sam_model_size == "B" else SAModelType.SAM_VIT_H
+            print("model_type:", model_type)
+            self.sam.load_weights(model_type=model_type, path_to_weights=self.sam_weights_path)
+
         self.save_current_annotations()
         path_to_weights = self.sam_weights_path
 
-        self.create_loading_screen("Running SAM.\nThis may take some time...")
+        self.create_loading_screen("Running SAM.This may take sometime...")
         self.update()
 
         output_dir = sam_main(
@@ -1234,6 +1244,7 @@ class ImageViewer(tk.Tk):
             annotations_filename="current_annotations.npz",
             image_folder=self.image_folder,
             model_size=self.sam_model_size,
+            sam=self.sam,
         )
         logging.info("Segmentation completed with all annotations.")
 
@@ -1244,8 +1255,56 @@ class ImageViewer(tk.Tk):
         mask_files = [f for f in os.listdir(output_dir) if f.startswith("mask_")]
         for i, mask_file in enumerate(mask_files):
             src_path = os.path.join(output_dir, mask_file)
-            dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
-            shutil.copy2(src_path, dst_path)
+        dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
+        shutil.copy2(src_path, dst_path)
+
+        # Remove the original "mask_*.png" files
+        for mask_file in mask_files:
+            os.remove(os.path.join(output_dir, mask_file))
+
+        self.load_masks()
+        self.clear_points_and_boxes()
+
+    def run_sam_with_selected_annotations(self):
+        if self.sam is None:
+            self.sam = SAModel()
+            model_type = SAModelType.SAM_VIT_L if self.sam_model_size == "L" else SAModelType.SAM_VIT_B if self.sam_model_size == "B" else SAModelType.SAM_VIT_H
+            print("model_type:", model_type)
+            self.sam.load_weights(model_type=model_type, path_to_weights=self.sam_weights_path)
+
+        selected_indices = self.annotation_listbox.curselection()
+        selected_points = [self.points[i] for i in selected_indices if i < len(self.points)]
+        selected_boxes = [self.boxes[i - len(self.points)] for i in selected_indices if
+                          i >= len(self.points) and i < len(self.points) + len(self.boxes)]
+
+        if not selected_points and not selected_boxes:
+            logging.warning("No annotations selected. Please select at least one annotation.")
+            return
+
+        self.save_selected_annotations(selected_points, selected_boxes)
+        path_to_weights = self.sam_weights_path
+
+        self.create_loading_screen("Running SAM.This may take sometime...")
+        self.update()
+
+        output_dir = sam_main(
+            path_to_weights,
+            annotations_filename="selected_annotations.npz",
+            image_folder=self.image_folder,
+            model_size=self.sam_model_size,
+            sam=self.sam,
+        )
+        logging.info("Segmentation completed with selected annotations.")
+
+        self.loading_screen.destroy()
+
+        # Save SAM-generated masks with a timestamp
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        mask_files = [f for f in os.listdir(output_dir) if f.startswith("mask_")]
+        for i, mask_file in enumerate(mask_files):
+            src_path = os.path.join(output_dir, mask_file)
+        dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
+        shutil.copy2(src_path, dst_path)
 
         # Remove the original "mask_*.png" files
         for mask_file in mask_files:

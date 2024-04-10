@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import cv2
 import os
 from datetime import datetime
-
+sam = None
+model_type = None
 
 def load_annotations(filename='annotations.npz'):
     data = np.load(filename, allow_pickle=True)
@@ -64,7 +65,14 @@ def save_masks_and_ious(masks, iou_scores, image, output_dir):
     # # Save the predicted image
     # plt.imsave(os.path.join(output_dir, "predicted_image.png"), image)
 
-def sam_main(path_to_weights, annotations_filename='annotations.npz', image_folder="", model_size="H"):
+def sam_main(path_to_weights, annotations_filename='annotations.npz', image_folder="", model_size="H", sam=None):
+
+    if sam is None:
+        sam = SAModel()
+        model_type = SAModelType.SAM_VIT_L if model_size == "L" else SAModelType.SAM_VIT_B if model_size == "B" else SAModelType.SAM_VIT_H
+        print("model_type:", model_type)
+        sam.load_weights(model_type=model_type, path_to_weights=path_to_weights)
+
     points, boxes, image = load_annotations(filename=annotations_filename)
     input_pts = points.tolist()
     boxes = boxes.tolist()
@@ -75,10 +83,6 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz', image_fold
         print(f"Warning: Image could not be loaded.")
         return
 
-    sam = SAModel()
-    model_type = SAModelType.SAM_VIT_L if model_size == "L" else SAModelType.SAM_VIT_B if model_size == "B" else SAModelType.SAM_VIT_H
-    print("model_type:",model_type)
-    sam.load_weights(model_type=model_type, path_to_weights=path_to_weights)
     sam.set_image(image)
 
     if input_pts:
