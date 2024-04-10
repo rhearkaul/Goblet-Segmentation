@@ -104,13 +104,6 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz', image_fold
         output_dir = image_folder
         save_masks_and_ious(final_masks, final_iou_scores, image, output_dir)
 
-        # plt.figure(figsize=(10, 10))
-        # plt.imshow(image)
-        # for mask in final_masks:
-        #     show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
-        # plt.axis('off')
-        # plt.show()
-
         return output_dir
     else:
         print("No points or boxes provided, or model did not predict any masks.")

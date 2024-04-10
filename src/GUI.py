@@ -171,9 +171,6 @@ class ImageViewer(tk.Tk):
         )
         delete_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
-        # save_button = tk.Button(self.annotation_window_frame, text="Save Annotations", command=self.save_annotations)
-        # save_button.pack(side=tk.BOTTOM, padx=5, pady=5)
-
         unselect_button = tk.Button(
             self.annotation_window_frame,
             text="Unselect",
@@ -448,13 +445,6 @@ class ImageViewer(tk.Tk):
         min_area_entry = tk.Entry(watershed_settings_window, textvariable=min_area_var)
         min_area_entry.pack()
 
-        # Create dist thresh input
-        # dist_thresh_label = tk.Label(watershed_settings_window, text="Distance Threshold:")
-        # dist_thresh_label.pack()
-        # dist_thresh_var = tk.DoubleVar()
-        # dist_thresh_var.set(30)  # Set the initial value
-        # dist_thresh_entry = tk.Entry(watershed_settings_window, textvariable=dist_thresh_var)
-        # dist_thresh_entry.pack()
 
         # Create save button
         def save_settings():
@@ -1197,42 +1187,6 @@ class ImageViewer(tk.Tk):
             self.canvas.image = photo
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
 
-    def loadAnnotations(self, annotation_file):
-        # Load annotations from a given file
-        if os.path.exists(annotation_file):
-            data = np.load(annotation_file, allow_pickle=True)
-            loaded_points = data["points"]
-            loaded_boxes = data["boxes"]
-
-            # Clear existing annotations
-            for point_id in self.point_ids:
-                self.canvas.delete(point_id)
-            for box_id in self.box_ids:
-                self.canvas.delete(box_id)
-
-            # Clear the lists
-            self.points.clear()
-            self.boxes.clear()
-            self.point_ids.clear()
-            self.box_ids.clear()
-
-            # Load new annotations
-            for point in loaded_points:
-                oval_id = self.canvas.create_oval(
-                    point[0] - 2, point[1] - 2, point[0] + 2, point[1] + 2, fill="red"
-                )
-                self.points.append((point[0], point[1]))
-                self.point_ids.append(oval_id)
-
-            for box in loaded_boxes:
-                rect_id = self.canvas.create_rectangle(
-                    box[0], box[1], box[2], box[3], outline="green"
-                )
-                self.boxes.append((box[0], box[1], box[2], box[3]))
-                self.box_ids.append(rect_id)
-        else:
-            logging.warning(f"Annotation file {annotation_file} not found.")
-
     def run_sam_with_current_annotation(self):
         self.save_current_annotations()
         path_to_weights = self.sam_weights_path
@@ -1337,11 +1291,6 @@ class ImageViewer(tk.Tk):
             tree = ET.ElementTree(metadata)
             node_dist_x = tree.find(".//Distance[@Id='X']")
 
-            # x=y assumed to be same for this impl
-            # node_dist_y = tree.find(".//Distance[@Id='Y']")
-
-            # resolution conversion
-
             if node_dist_x:
                 self.pixel_to_unit_scale = float(node_dist_x.find("Value").text) * 1e6
 
@@ -1351,13 +1300,6 @@ class ImageViewer(tk.Tk):
             if not prop_df.empty:
                 result = analyze_properties(prop_df, self.pixel_to_unit_scale)
                 results.append(result)
-
-        # Save results to a CSV file with a timestamp
-        # timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-
-        # results_file = os.path.join(
-        #     self.image_folder, f"analysis_results_{timestamp}.csv"
-        # )
 
         combined_results = pd.concat(results, axis=1).T.reset_index(drop=True)
 
