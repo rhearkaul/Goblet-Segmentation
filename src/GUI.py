@@ -15,12 +15,8 @@ from PIL import Image, ImageTk
 
 from metrics import analyze_properties, get_prop
 from sam2 import sam_main
-from watershed.watershed import (
-    INTENSITY_THRESHOLDS,
-    SIZE_THRESHOLDS,
-    STAIN_VECTORS,
-    generate_centroid,
-)
+from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
+                                 STAIN_VECTORS, generate_centroid)
 
 
 class ImageViewer(tk.Tk):
@@ -654,6 +650,7 @@ class ImageViewer(tk.Tk):
                     os.path.join(self.cache_folder, os.path.basename(image_path))
                 )
 
+            self.pixel_to_unit_scale = 1
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(image)
             self.opened_image = image
@@ -1345,15 +1342,15 @@ class ImageViewer(tk.Tk):
             # node_dist_y = tree.find(".//Distance[@Id='Y']")
 
             # resolution conversion
-            res_x = float(node_dist_x.find("Value").text) * 1e6 if node_dist_x else 1
-        else:
-            res_x, _ = self.opened_image.info.get("resolution", (1, 1))
+
+            if node_dist_x:
+                self.pixel_to_unit_scale = float(node_dist_x.find("Value").text) * 1e6
 
         results = []
         for binary_mask in binary_masks:
             prop_df = get_prop(binary_mask)
             if not prop_df.empty:
-                result = analyze_properties(prop_df, res_x)
+                result = analyze_properties(prop_df, self.pixel_to_unit_scale)
                 results.append(result)
 
         # Save results to a CSV file with a timestamp
