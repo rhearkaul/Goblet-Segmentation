@@ -106,35 +106,35 @@ def analyze_properties(property_df: pd.DataFrame, resolution: float):
     return df
 
 
-def detect_outliers(data: pd.DataFrame | list, alpha: float = 3):
-    """Uses Z-test as a method for outlier detection`.
+def detect_outliers(data: pd.Series, thresh: int = 3, b: float = 1.4826):
+    """Uses MAD as a method for outlier detection`.
 
     Developer Note: other implementations could work. Suggestion for
     future implementation can be found in `sklearn`.
 
+    Adapted from https://doi.org/10.1016/j.jesp.2013.03.013
+
     Parameters:
     -----------
-    data: pd.DataFrame | list
+    data: pd.Series() 
         a one-dimensional dataset that contains some information about the data.
 
-    alpha: float
-        sigma threshold required to pass detection.
+    thresh: float
+        the multiplicative constant mad thresholds.
+
+    b: float
+        Constant value for norm dist calibration.
 
     Returns:
     --------
-    tuple:
-        of pd.DataFrames containing inliers and outliers, respectively.
+    np.array[bool]:
+        describes whether it is likely outlier (1) or not (0), respectively.
     """
-    df = pd.DataFrame(data)
-    if len(df) <= 1:
+    if len(data) <= 1:
         # Return the entire DataFrame as inliers if there's only one or no data points
-        return df, pd.DataFrame()
-
-    z_scores = (df - df.mean()) / df.std()
-    filter = abs(z_scores) < alpha
-
-    inliers = df[filter]
-    outliers = df[~filter]
-
-    return inliers, outliers
-
+        return data, pd.DataFrame()
+    diffs = np.abs(data - data.median())
+    mad = b * diffs.median()
+    outliers = (diffs > thresh * mad).astype(int)
+    outliers.name = "potential_outlier"
+    return outliers
