@@ -8,7 +8,10 @@ import os
 from datetime import datetime
 sam = None
 model_type = None
-
+from aicspylibczi import CziFile
+from xml.etree import ElementTree as ET
+import logging
+from PIL import Image, ImageTk
 def load_annotations(filename='annotations.npz'):
     data = np.load(filename, allow_pickle=True)
     input_points = data['points']
@@ -19,9 +22,19 @@ def load_annotations(filename='annotations.npz'):
     print("Loaded boxes:", input_boxes)
     print("Image path:", image_path)
 
-    image = cv2.imread(image_path)
-    if image is not None:
+    if image_path.endswith(".czi"):
+        czi = CziFile(image_path)
+        # image is in ((time, Y, X, channel), metadata) format
+        image = czi.read_image()[0][-1, :]
+        # normalize to 255 (data appears to be in uint16)
+        image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    else:
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    if image is not None:
+        print("Image loaded")
     else:
         print(f"Warning: Image at {image_path} could not be loaded.")
         image = None
@@ -78,7 +91,8 @@ def sam_main(path_to_weights, annotations_filename='annotations.npz', image_fold
     boxes = boxes.tolist()
 
     if image is not None:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        print("image data")
+        print(image)
     else:
         print(f"Warning: Image could not be loaded.")
         return
