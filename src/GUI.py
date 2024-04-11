@@ -555,8 +555,17 @@ class ImageViewer(tk.Tk):
             self.create_loading_screen("Running Watershed.\nThis may take some time...")
             self.update()
 
+            if self.image_path.endswith(".czi"):
+                czi = CziFile(self.image_path)
+                # image is in ((time, Y, X, channel), metadata) format
+                image = czi.read_image()[0][-1, :]
+                # normalize to 255 (data appears to be in uint16)
+                image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            else:
+                image = cv2.imread(self.image_path)
             # Get centroids
-            image = cv2.imread(self.image_path)
+
             stain_vector = STAIN_VECTORS[self.watershed_settings["stain_vector"]]
             centroid_coords, deconv_img, segmented_img, distances = generate_centroid(
                 image,
