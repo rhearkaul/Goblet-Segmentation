@@ -152,13 +152,6 @@ class ImageViewer(tk.Tk):
         )
         run_analysis_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-        remove_bad_masks_button = tk.Button(
-            toolbar_frame,
-            text="Remove Bad Masks",
-            command=self.remove_bad_masks,
-        )
-        remove_bad_masks_button.pack(side=tk.LEFT, padx=5, pady=5)
-
         # Calculate the sizes of function window and image display area
         function_window_width = int(window_width * 0.2)
         function_window_height = window_height - 80
