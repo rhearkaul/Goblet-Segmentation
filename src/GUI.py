@@ -80,7 +80,7 @@ class ImageViewer(tk.Tk):
         self.drag_coefficient_x = 0
         self.drag_coefficient_y = 0
 
-        self.multi_select_mode = False
+        self.multi_select_mode = True
 
         # Minimap
         self.minimap_window = None
@@ -183,7 +183,7 @@ class ImageViewer(tk.Tk):
         )
         unselect_button.pack(side=tk.BOTTOM, padx=5, pady=5)
 
-        self.multi_select_mode = False
+        self.multi_select_mode = True
         self.multi_select_button = tk.Button(
             self.annotation_window_frame,
             text="Multi Select",
