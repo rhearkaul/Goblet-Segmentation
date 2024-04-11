@@ -701,6 +701,11 @@ class ImageViewer(tk.Tk):
             self.canvas.image = photo
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
             self.clear_annotations()
+            self.drag_coefficient_x = 0
+            self.drag_coefficient_y = 0
+            self.minimap_drag_coefficient_x = 0
+            self.minimap_drag_coefficient_y = 0
+
             logging.info(f"Image opened: {image_path}")
         else:
             self.opened_image = None
