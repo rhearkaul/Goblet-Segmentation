@@ -12,12 +12,15 @@ import pandas as pd
 from aicspylibczi import CziFile
 from PIL import Image, ImageTk
 
-from metrics import (_MEASURED_PROPS, analyze_properties, detect_outliers,
-                     get_prop)
+from metrics import _MEASURED_PROPS, analyze_properties, detect_outliers, get_prop
 from sam2 import sam_main
 from sam.sam import SAModel, SAModelType
-from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
-                                 STAIN_VECTORS, generate_centroid)
+from watershed.watershed import (
+    INTENSITY_THRESHOLDS,
+    SIZE_THRESHOLDS,
+    STAIN_VECTORS,
+    generate_centroid,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -373,7 +376,7 @@ class ImageViewer(tk.Tk):
 
         warning_label = tk.Label(
             watershed_settings_window,
-            text="Watershed are unstable, please consult manual.",
+            text="Watershed is unstable.\nPlease consult manual for more info.",
             fg="red",
         )
         warning_label.pack(pady=10)
@@ -1252,7 +1255,7 @@ class ImageViewer(tk.Tk):
                     else SAModelType.SAM_VIT_H
                 )
             )
-            print("model_type:", model_type)
+            logging.info(f"Attempting to load model_type: {model_type}")
             self.sam.load_weights(
                 model_type=model_type, path_to_weights=self.sam_weights_path
             )
@@ -1301,7 +1304,7 @@ class ImageViewer(tk.Tk):
                     else SAModelType.SAM_VIT_H
                 )
             )
-            print("model_type:", model_type)
+            logging.info(f"Attempting to load model_type: {model_type}")
             self.sam.load_weights(
                 model_type=model_type, path_to_weights=self.sam_weights_path
             )
