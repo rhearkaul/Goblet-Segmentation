@@ -717,8 +717,8 @@ class ImageViewer(tk.Tk):
                         float(node_dist_x.find("Value").text) * 1e6
                     )
 
-                logging.warning(
-                    f"Pixel-to-measurement scale is set to {self.pixel_to_unit_scale}."
+                logging.info(
+                    f"CZI loaded, pixel-to-measurement scale is set to {self.pixel_to_unit_scale}."
                 )
 
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
