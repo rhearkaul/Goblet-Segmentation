@@ -1110,65 +1110,37 @@ class ImageViewer(tk.Tk):
                     )
 
     def check_annotation_click(self, x, y):
-        if self.multi_select_mode:
-            selected_indices = []
-            for i, box in enumerate(self.boxes):
-                if (
-                        box[0] + self.drag_coefficient_x
-                        <= x
-                        <= box[2] + self.drag_coefficient_x
-                        and box[1] + self.drag_coefficient_y
-                        <= y
-                        <= box[3] + self.drag_coefficient_y
-                ):
-                    selected_indices.append(len(self.points) + i)
-            for i, point in enumerate(self.points):
-                if (
-                        abs(point[0] - (x - self.drag_coefficient_x)) <= 2
-                        and abs(point[1] - (y - self.drag_coefficient_y)) <= 2
-                ):
-                    selected_indices.append(i)
-            if selected_indices:
-                self.annotation_listbox.selection_set(selected_indices)
-                self.highlight_annotations(selected_indices)
-        else:
-            for i, box in enumerate(self.boxes):
-                if (
-                        box[0] + self.drag_coefficient_x
-                        <= x
-                        <= box[2] + self.drag_coefficient_x
-                        and box[1] + self.drag_coefficient_y
-                        <= y
-                        <= box[3] + self.drag_coefficient_y
-                ):
-                    self.annotation_listbox.selection_clear(0, tk.END)
-                    self.annotation_listbox.selection_set(len(self.points) + i)
-                    self.highlight_annotations([len(self.points) + i])
-                    return
-            for i, point in enumerate(self.points):
-                if (
-                        abs(point[0] - (x - self.drag_coefficient_x)) <= 2
-                        and abs(point[1] - (y - self.drag_coefficient_y)) <= 2
-                ):
+        selected_indices = []
+        for i, point in enumerate(self.points):
+            if (
+                    point[0] + self.drag_coefficient_x - 5 <= x <= point[0] + self.drag_coefficient_x + 5
+                    and point[1] + self.drag_coefficient_y - 5 <= y <= point[1] + self.drag_coefficient_y + 5
+            ):
+                if self.multi_select_mode:
+                    if i in self.annotation_listbox.curselection():
+                        self.annotation_listbox.selection_clear(i)
+                    else:
+                        self.annotation_listbox.selection_set(i)
+                else:
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(i)
-                    self.highlight_annotations([i])
-                    return
-            for i, mask in enumerate(self.masks):
-                if (
-                        0 <= y - self.drag_coefficient_y < mask.shape[0]
-                        and 0 <= x - self.drag_coefficient_x < mask.shape[1]
-                        and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x]
-                        > 0
-                ):
+                selected_indices.append(i)
+        for i, box in enumerate(self.boxes):
+            if (
+                    box[0] + self.drag_coefficient_x <= x <= box[2] + self.drag_coefficient_x
+                    and box[1] + self.drag_coefficient_y <= y <= box[3] + self.drag_coefficient_y
+            ):
+                index = len(self.points) + i
+                if self.multi_select_mode:
+                    if index in self.annotation_listbox.curselection():
+                        self.annotation_listbox.selection_clear(index)
+                    else:
+                        self.annotation_listbox.selection_set(index)
+                else:
                     self.annotation_listbox.selection_clear(0, tk.END)
-                    self.annotation_listbox.selection_set(
-                        len(self.points) + len(self.boxes) + i
-                    )
-                    self.highlight_mask(i)
-                    return
-
-            self.highlight_mask(-1)  # Clear highlight if no mask is clicked
+                    self.annotation_listbox.selection_set(index)
+                selected_indices.append(index)
+        self.on_annotation_select(None)
 
     def delete_selected_annotation(self):
         selection = self.annotation_listbox.curselection()
