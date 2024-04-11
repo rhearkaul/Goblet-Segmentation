@@ -9,10 +9,10 @@ from xml.etree import ElementTree as ET
 import cv2
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageTk
 from aicspylibczi import CziFile
+from PIL import Image, ImageTk
 
-from metrics import analyze_properties, get_prop, detect_outliers
+from metrics import _MEASURED_PROPS, analyze_properties, detect_outliers, get_prop
 from sam2 import sam_main
 from sam.sam import SAModel, SAModelType
 from watershed.watershed import (
@@ -200,7 +200,9 @@ class ImageViewer(tk.Tk):
             command=self.toggle_multi_select_mode,
         )
         self.multi_select_button.pack(side=tk.BOTTOM, padx=5, pady=5)
-        self.multi_select_button.configure(bg="lightgray" if not self.multi_select_mode else "lightblue")
+        self.multi_select_button.configure(
+            bg="lightgray" if not self.multi_select_mode else "lightblue"
+        )
 
         self.image_viewer_frame = tk.Frame(
             self, bg="white", width=image_display_width, height=image_display_height
@@ -352,10 +354,14 @@ class ImageViewer(tk.Tk):
         self.multi_select_mode = not self.multi_select_mode
         if self.multi_select_mode:
             self.annotation_listbox.config(selectmode=tk.EXTENDED)
-            self.multi_select_button.configure(bg="lightblue")  # Change background color when enabled
+            self.multi_select_button.configure(
+                bg="lightblue"
+            )  # Change background color when enabled
         else:
             self.annotation_listbox.config(selectmode=tk.BROWSE)
-            self.multi_select_button.configure(bg="lightgray")  # Change background color when disabled
+            self.multi_select_button.configure(
+                bg="lightgray"
+            )  # Change background color when disabled
 
     def toggle_drag_mode(self):
         if self.opened_image:
@@ -708,7 +714,7 @@ class ImageViewer(tk.Tk):
                 # resolution conversion
                 if node_dist_x:
                     self.pixel_to_unit_scale = (
-                            float(node_dist_x.find("Value").text) * 1e6
+                        float(node_dist_x.find("Value").text) * 1e6
                     )
 
                 logging.warning(
@@ -761,8 +767,8 @@ class ImageViewer(tk.Tk):
             f
             for f in all_files
             if not f.startswith(self.image_name)
-               and not f.startswith("predicted_")
-               and not f.startswith("mask_")
+            and not f.startswith("predicted_")
+            and not f.startswith("mask_")
         ]
         mask_files = sorted(
             mask_files,
@@ -854,7 +860,7 @@ class ImageViewer(tk.Tk):
             mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
             mask_rgba[..., :3] = [30, 144, 255]  # Blue color
             mask_rgba[..., 3] = (
-                    binary_mask.astype(np.uint8) * 128
+                binary_mask.astype(np.uint8) * 128
             )  # Set alpha channel based on mask
 
             mask_image = Image.fromarray(mask_rgba, mode="RGBA")
@@ -1145,18 +1151,18 @@ class ImageViewer(tk.Tk):
             selected_indices = []
             for i, box in enumerate(self.boxes):
                 if (
-                        box[0] + self.drag_coefficient_x
-                        <= x
-                        <= box[2] + self.drag_coefficient_x
-                        and box[1] + self.drag_coefficient_y
-                        <= y
-                        <= box[3] + self.drag_coefficient_y
+                    box[0] + self.drag_coefficient_x
+                    <= x
+                    <= box[2] + self.drag_coefficient_x
+                    and box[1] + self.drag_coefficient_y
+                    <= y
+                    <= box[3] + self.drag_coefficient_y
                 ):
                     selected_indices.append(len(self.points) + i)
             for i, point in enumerate(self.points):
                 if (
-                        abs(point[0] + self.drag_coefficient_x - x) <= 2
-                        and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                    abs(point[0] + self.drag_coefficient_x - x) <= 2
+                    and abs(point[1] + self.drag_coefficient_y - y) <= 2
                 ):
                     selected_indices.append(i)
             if selected_indices:
@@ -1165,12 +1171,12 @@ class ImageViewer(tk.Tk):
         else:
             for i, box in enumerate(self.boxes):
                 if (
-                        box[0] + self.drag_coefficient_x
-                        <= x
-                        <= box[2] + self.drag_coefficient_x
-                        and box[1] + self.drag_coefficient_y
-                        <= y
-                        <= box[3] + self.drag_coefficient_y
+                    box[0] + self.drag_coefficient_x
+                    <= x
+                    <= box[2] + self.drag_coefficient_x
+                    and box[1] + self.drag_coefficient_y
+                    <= y
+                    <= box[3] + self.drag_coefficient_y
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(len(self.points) + i)
@@ -1178,8 +1184,8 @@ class ImageViewer(tk.Tk):
                     return
             for i, point in enumerate(self.points):
                 if (
-                        abs(point[0] + self.drag_coefficient_x - x) <= 2
-                        and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                    abs(point[0] + self.drag_coefficient_x - x) <= 2
+                    and abs(point[1] + self.drag_coefficient_y - y) <= 2
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(i)
@@ -1187,10 +1193,10 @@ class ImageViewer(tk.Tk):
                     return
             for i, mask in enumerate(self.masks):
                 if (
-                        0 <= y - self.drag_coefficient_y < mask.shape[0]
-                        and 0 <= x - self.drag_coefficient_x < mask.shape[1]
-                        and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x]
-                        > 0
+                    0 <= y - self.drag_coefficient_y < mask.shape[0]
+                    and 0 <= x - self.drag_coefficient_x < mask.shape[1]
+                    and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x]
+                    > 0
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(
@@ -1274,14 +1280,24 @@ class ImageViewer(tk.Tk):
     def run_sam_with_current_annotation(self):
         if self.sam is None:
             self.sam = SAModel()
-            model_type = SAModelType.SAM_VIT_L if self.sam_model_size == "L" else SAModelType.SAM_VIT_B if self.sam_model_size == "B" else SAModelType.SAM_VIT_H
+            model_type = (
+                SAModelType.SAM_VIT_L
+                if self.sam_model_size == "L"
+                else (
+                    SAModelType.SAM_VIT_B
+                    if self.sam_model_size == "B"
+                    else SAModelType.SAM_VIT_H
+                )
+            )
             print("model_type:", model_type)
-            self.sam.load_weights(model_type=model_type, path_to_weights=self.sam_weights_path)
+            self.sam.load_weights(
+                model_type=model_type, path_to_weights=self.sam_weights_path
+            )
 
         self.save_current_annotations()
         path_to_weights = self.sam_weights_path
 
-        self.create_loading_screen("Running SAM.\nThis may take sometime...")
+        self.create_loading_screen("Running SAM.\nThis may take some time...")
         self.update()
 
         output_dir = sam_main(
@@ -1313,23 +1329,40 @@ class ImageViewer(tk.Tk):
     def run_sam_with_selected_annotations(self):
         if self.sam is None:
             self.sam = SAModel()
-            model_type = SAModelType.SAM_VIT_L if self.sam_model_size == "L" else SAModelType.SAM_VIT_B if self.sam_model_size == "B" else SAModelType.SAM_VIT_H
+            model_type = (
+                SAModelType.SAM_VIT_L
+                if self.sam_model_size == "L"
+                else (
+                    SAModelType.SAM_VIT_B
+                    if self.sam_model_size == "B"
+                    else SAModelType.SAM_VIT_H
+                )
+            )
             print("model_type:", model_type)
-            self.sam.load_weights(model_type=model_type, path_to_weights=self.sam_weights_path)
+            self.sam.load_weights(
+                model_type=model_type, path_to_weights=self.sam_weights_path
+            )
 
         selected_indices = self.annotation_listbox.curselection()
-        selected_points = [self.points[i] for i in selected_indices if i < len(self.points)]
-        selected_boxes = [self.boxes[i - len(self.points)] for i in selected_indices if
-                          i >= len(self.points) and i < len(self.points) + len(self.boxes)]
+        selected_points = [
+            self.points[i] for i in selected_indices if i < len(self.points)
+        ]
+        selected_boxes = [
+            self.boxes[i - len(self.points)]
+            for i in selected_indices
+            if i >= len(self.points) and i < len(self.points) + len(self.boxes)
+        ]
 
         if not selected_points and not selected_boxes:
-            logging.warning("No annotations selected. Please select at least one annotation.")
+            logging.warning(
+                "No annotations selected. Please select at least one annotation."
+            )
             return
 
         self.save_selected_annotations(selected_points, selected_boxes)
         path_to_weights = self.sam_weights_path
 
-        self.create_loading_screen("Running SAM.\nThis may take sometime...")
+        self.create_loading_screen("Running SAM.\nThis may take some time...")
         self.update()
 
         output_dir = sam_main(
@@ -1431,7 +1464,11 @@ class ImageViewer(tk.Tk):
                 result = analyze_properties(prop_df, self.pixel_to_unit_scale)
                 results.append(result)
 
-        combined_results = pd.concat(results, axis=1).T.reset_index(drop=True)
+        results = pd.concat(results, axis=1).T.reset_index(drop=True)
+        # Use perimeter to prevent scale issues
+        outlier_bools = detect_outliers(results[_MEASURED_PROPS[1]])
+
+        combined_results = pd.concat([results, outlier_bools], axis=1)
 
         csv_output_folder = filedialog.asksaveasfilename(
             initialdir=".",
