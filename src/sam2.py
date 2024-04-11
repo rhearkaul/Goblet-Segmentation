@@ -1,4 +1,4 @@
-from src.sam.sam import SAModel, SAModelType
+from sam.sam import SAModel, SAModelType
 import csv
 import numpy as np
 import torch

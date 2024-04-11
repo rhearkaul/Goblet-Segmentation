@@ -14,7 +14,7 @@ from aicspylibczi import CziFile
 
 from metrics import analyze_properties, get_prop, detect_outliers
 from sam2 import sam_main
-from src.sam.sam import SAModel, SAModelType
+from sam.sam import SAModel, SAModelType
 from watershed.watershed import (
     INTENSITY_THRESHOLDS,
     SIZE_THRESHOLDS,
