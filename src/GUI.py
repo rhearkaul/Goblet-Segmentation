@@ -1114,18 +1114,18 @@ class ImageViewer(tk.Tk):
             selected_indices = []
             for i, box in enumerate(self.boxes):
                 if (
-                    box[0] + self.drag_coefficient_x
-                    <= x
-                    <= box[2] + self.drag_coefficient_x
-                    and box[1] + self.drag_coefficient_y
-                    <= y
-                    <= box[3] + self.drag_coefficient_y
+                        box[0] + self.drag_coefficient_x
+                        <= x
+                        <= box[2] + self.drag_coefficient_x
+                        and box[1] + self.drag_coefficient_y
+                        <= y
+                        <= box[3] + self.drag_coefficient_y
                 ):
                     selected_indices.append(len(self.points) + i)
             for i, point in enumerate(self.points):
                 if (
-                    abs(point[0] + self.drag_coefficient_x - x) <= 2
-                    and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                        abs(point[0] - (x - self.drag_coefficient_x)) <= 2
+                        and abs(point[1] - (y - self.drag_coefficient_y)) <= 2
                 ):
                     selected_indices.append(i)
             if selected_indices:
@@ -1134,12 +1134,12 @@ class ImageViewer(tk.Tk):
         else:
             for i, box in enumerate(self.boxes):
                 if (
-                    box[0] + self.drag_coefficient_x
-                    <= x
-                    <= box[2] + self.drag_coefficient_x
-                    and box[1] + self.drag_coefficient_y
-                    <= y
-                    <= box[3] + self.drag_coefficient_y
+                        box[0] + self.drag_coefficient_x
+                        <= x
+                        <= box[2] + self.drag_coefficient_x
+                        and box[1] + self.drag_coefficient_y
+                        <= y
+                        <= box[3] + self.drag_coefficient_y
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(len(self.points) + i)
@@ -1147,8 +1147,8 @@ class ImageViewer(tk.Tk):
                     return
             for i, point in enumerate(self.points):
                 if (
-                    abs(point[0] + self.drag_coefficient_x - x) <= 2
-                    and abs(point[1] + self.drag_coefficient_y - y) <= 2
+                        abs(point[0] - (x - self.drag_coefficient_x)) <= 2
+                        and abs(point[1] - (y - self.drag_coefficient_y)) <= 2
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(i)
@@ -1156,10 +1156,10 @@ class ImageViewer(tk.Tk):
                     return
             for i, mask in enumerate(self.masks):
                 if (
-                    0 <= y - self.drag_coefficient_y < mask.shape[0]
-                    and 0 <= x - self.drag_coefficient_x < mask.shape[1]
-                    and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x]
-                    > 0
+                        0 <= y - self.drag_coefficient_y < mask.shape[0]
+                        and 0 <= x - self.drag_coefficient_x < mask.shape[1]
+                        and mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x]
+                        > 0
                 ):
                     self.annotation_listbox.selection_clear(0, tk.END)
                     self.annotation_listbox.selection_set(
