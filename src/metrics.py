@@ -16,6 +16,7 @@ _MEASURED_PROPS = _PIXEL_PIXEL_PROPS + _PIXEL_PROPS
 
 _RATIO_PROPS = [
     "eccentricity",
+    "solidity",
     "orientation",
 ]
 
