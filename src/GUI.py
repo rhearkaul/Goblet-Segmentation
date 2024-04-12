@@ -12,15 +12,12 @@ import pandas as pd
 from aicspylibczi import CziFile
 from PIL import Image, ImageTk
 
-from metrics import _MEASURED_PROPS, analyze_properties, detect_outliers, get_prop
+from metrics import (_MEASURED_PROPS, analyze_properties, detect_outliers,
+                     get_prop)
 from sam2 import sam_main
 from sam.sam import SAModel, SAModelType
-from watershed.watershed import (
-    INTENSITY_THRESHOLDS,
-    SIZE_THRESHOLDS,
-    STAIN_VECTORS,
-    generate_centroid,
-)
+from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
+                                 STAIN_VECTORS, generate_centroid)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -653,6 +650,7 @@ class ImageViewer(tk.Tk):
             self.copy_image_to_folder()
 
             self.pixel_to_unit_scale = 1
+            unit_txt = "unit measurement"
 
             # Special processing for .czi files
             if image_path.endswith(".czi"):
@@ -674,12 +672,18 @@ class ImageViewer(tk.Tk):
 
                 # resolution conversion
                 if node_dist_x:
+                    scale = node_dist_x.find("Value")
+                    unit = node_dist_x.find("DefaultUnitFormat")
+
+                    # This value should be equivalent to what is observed when image loaded into FIJI
                     self.pixel_to_unit_scale = (
-                        float(node_dist_x.find("Value").text) * 1e6
+                        (float(scale.text) * 1e6) if scale is not None else self.pixel_to_unit_scale
                     )
 
+                    unit_txt = unit.text if unit is not None else unit_txt
+
                 logging.info(
-                    f"CZI loaded, pixel-to-measurement scale is set to {self.pixel_to_unit_scale}."
+                    f"CZI loaded, pixel-to-measurement scale is set to {self.pixel_to_unit_scale:.4f} {unit_txt} / pixel."
                 )
 
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -689,13 +693,14 @@ class ImageViewer(tk.Tk):
                     os.path.join(self.cache_folder, os.path.basename(image_path))
                 )
 
-                self.pixel_to_unit_scale, _ = image.info.get("resolution", (1, 1))
-                self.pixel_to_unit_scale = 1 / float(self.pixel_to_unit_scale)
+                # This is not the right "resolution".
+                # self.pixel_to_unit_scale, _ = image.info.get("resolution", (1, 1))
+                # self.pixel_to_unit_scale = 1 / float(self.pixel_to_unit_scale)
 
                 logging.info(
                     (
                         "Non-CZI file selected,"
-                        f"pixel-to-measurement scale is set to {self.pixel_to_unit_scale}."
+                        f"pixel-to-measurement scale is set to {self.pixel_to_unit_scale:.4f} / {unit_txt}."
                     )
                 )
 
