@@ -1,21 +1,17 @@
 import csv
+import logging
 import os
-from datetime import datetime
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from aicspylibczi import CziFile
 
 from sam.sam import SAModel, SAModelType
 
 sam = None
 model_type = None
-import logging
-from xml.etree import ElementTree as ET
-
-from aicspylibczi import CziFile
-from PIL import Image, ImageTk
 
 
 def load_annotations(filename="annotations.npz"):

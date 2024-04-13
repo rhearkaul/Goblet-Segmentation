@@ -12,15 +12,12 @@ import pandas as pd
 from aicspylibczi import CziFile
 from PIL import Image, ImageTk
 
-from metrics import _MEASURED_PROPS, analyze_properties, detect_outliers, get_prop
+from metrics import (_MEASURED_PROPS, analyze_properties, detect_outliers,
+                     get_prop)
 from sam.sam import SAModel, SAModelType
 from sam.util import sam_main
-from watershed.watershed import (
-    INTENSITY_THRESHOLDS,
-    SIZE_THRESHOLDS,
-    STAIN_VECTORS,
-    generate_centroid,
-)
+from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
+                                 STAIN_VECTORS, generate_centroid)
 
 logging.basicConfig(level=logging.INFO)
 

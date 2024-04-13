@@ -117,7 +117,7 @@ def detect_outliers(data: pd.Series, thresh: int = 3, b: float = 1.4826):
 
     Parameters:
     -----------
-    data: pd.Series() 
+    data: pd.Series()
         a one-dimensional dataset that contains some information about the data.
 
     thresh: float

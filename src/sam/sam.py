@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import requests
 import torch
-from segment_anything import SamPredictor, build_sam_vit_l, sam_model_registry
+from segment_anything import SamPredictor, sam_model_registry
 
 
 class SAModelType(Enum):
