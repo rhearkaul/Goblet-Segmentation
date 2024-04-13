@@ -15,6 +15,8 @@ from skimage.filters import threshold_otsu
 from skimage.measure import label, regionprops
 from skimage.segmentation import watershed
 
+# Staining vectors adapted from
+# https://github.com/jnkather/ColorDeconvolutionMatlab?tab=readme-ov-file
 STAIN_VECTORS = {
     0: np.array(
         [
@@ -98,7 +100,7 @@ def _filter_img(
     max_aspect_ratio,
     min_area,
 ):
-    """Filteres out `regionprops` based on solidity."""
+    """Filters out `regionprops` based on solidity."""
     # Can be restructured if more filters are required.
     # Should be optimized eventually...
 
@@ -229,14 +231,13 @@ def generate_centroid(
         and is used for filtering. Large ratios typically indicate outliers.
 
     max_solidity: float
-        # Todo
+        Solidity is the measurement of the overall concavity of the particle.
+        It is defined as the area of the object divided by the convex hull area.
+        This is used to filter out objects that are irregular in shape.
 
     min_area: float
         The minimum area of the detected object. This is set to remove the smaller
         point-like objects which are likely artifacts.
-
-    distance_thresh: float
-        # Todo
 
     Returns
     -------
