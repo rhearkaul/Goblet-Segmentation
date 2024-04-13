@@ -1,3 +1,12 @@
+"""Package that generates the SAM models and interface tools for 
+prompted segmentation. 
+
+Adapted use from: https://github.com/facebookresearch/segment-anything 
+
+Author: Alvin Hendricks
+"""
+
+
 import logging
 import os
 from enum import Enum

@@ -1,3 +1,9 @@
+"""Utilty package that aids in using SAM, rendering annotations,
+and also contains IO tools.
+
+Author: Ankang Luo
+"""
+
 import csv
 import logging
 import os

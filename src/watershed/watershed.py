@@ -1,6 +1,8 @@
 """Class to perform preprocesing and Watershed techniques for prompt generation.
-The original code is written by the author but is adapted into this
-codebase to match coding styles and practices.
+
+Note: the original code was written by the author in MATLAB, then converted into
+Python as a script. It has then been adapted into this codebase with some modification 
+to match coding styles and practices.
 
 Author: Rhea Kaul
 Adapted by: Alvin Hendricks

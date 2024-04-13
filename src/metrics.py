@@ -1,3 +1,12 @@
+"""Package to analyze and generate metrics for binary mask inputs. 
+
+Note: Properties are hard-coded at the moment, but should be parameterized in future use cases.
+
+Adapted use from: https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops
+
+Author: Alvin Hendricks
+"""
+
 import numpy as np
 import pandas as pd
 from skimage.measure import label, regionprops_table
@@ -40,28 +49,6 @@ def get_prop(binary_mask: np.ndarray, properties: list = PROPERTIES):
     --------
         pd.DataFrame of values representing each image as a row
         and designated properties as columns.
-
-    Assuming we have .tiff we can convert the resolution to length.
-
-    Example usage:
-    >>> from PIL import Image
-    >>> img = Image.open("image.tiff")
-    >>> res_x, res_y = img.info.get("resolution", (None, None))
-
-    >>> if not res_x or not res_y:
-        # Can be handled by default parameters as well...but assume
-    >>>     logging.error("Resolution not found, skipping image...")
-
-    >>> binary_masks = ...
-    >>> a_random_prop = get_prop(binary_masks[5])
-
-    >>> area = a_random_prop["area"] * res_x * res_y
-
-    >>> orientation = a_random_prop["orientation"]
-    >>> axis_major_length = np.linalg.norm([
-        a_random_prop["axis_major_length"] * np.cos(orientation) * res_x,
-        a_random_prop["axis_major_length"] * np.sin(orientation) * res_y,
-    ])
     """
     labels = label(binary_mask)
     props = regionprops_table(labels, properties=properties)
