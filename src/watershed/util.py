@@ -80,13 +80,3 @@ def watershed_image(bin_image_path, image_path):
     )
 
     save_annotations(coords, image_path)
-
-
-if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) > 1:
-        image_path = sys.argv[1]
-        process_image(image_path)
-    else:
-        print("Please provide an image path.")
