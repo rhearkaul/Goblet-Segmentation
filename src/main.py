@@ -12,12 +12,15 @@ import pandas as pd
 from aicspylibczi import CziFile
 from PIL import Image, ImageTk
 
-from metrics import (_MEASURED_PROPS, analyze_properties, detect_outliers,
-                     get_prop)
-from sam2 import sam_main
+from metrics import _MEASURED_PROPS, analyze_properties, detect_outliers, get_prop
 from sam.sam import SAModel, SAModelType
-from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
-                                 STAIN_VECTORS, generate_centroid)
+from sam.util import sam_main
+from watershed.watershed import (
+    INTENSITY_THRESHOLDS,
+    SIZE_THRESHOLDS,
+    STAIN_VECTORS,
+    generate_centroid,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -677,7 +680,9 @@ class ImageViewer(tk.Tk):
 
                     # This value should be equivalent to what is observed when image loaded into FIJI
                     self.pixel_to_unit_scale = (
-                        (float(scale.text) * 1e6) if scale is not None else self.pixel_to_unit_scale
+                        (float(scale.text) * 1e6)
+                        if scale is not None
+                        else self.pixel_to_unit_scale
                     )
 
                     unit_txt = unit.text if unit is not None else unit_txt
@@ -1121,8 +1126,12 @@ class ImageViewer(tk.Tk):
         selected_indices = []
         for i, point in enumerate(self.points):
             if (
-                    point[0] + self.drag_coefficient_x - 5 <= x <= point[0] + self.drag_coefficient_x + 5
-                    and point[1] + self.drag_coefficient_y - 5 <= y <= point[1] + self.drag_coefficient_y + 5
+                point[0] + self.drag_coefficient_x - 5
+                <= x
+                <= point[0] + self.drag_coefficient_x + 5
+                and point[1] + self.drag_coefficient_y - 5
+                <= y
+                <= point[1] + self.drag_coefficient_y + 5
             ):
                 if self.multi_select_mode:
                     if i in self.annotation_listbox.curselection():
@@ -1135,8 +1144,12 @@ class ImageViewer(tk.Tk):
                 selected_indices.append(i)
         for i, box in enumerate(self.boxes):
             if (
-                    box[0] + self.drag_coefficient_x <= x <= box[2] + self.drag_coefficient_x
-                    and box[1] + self.drag_coefficient_y <= y <= box[3] + self.drag_coefficient_y
+                box[0] + self.drag_coefficient_x
+                <= x
+                <= box[2] + self.drag_coefficient_x
+                and box[1] + self.drag_coefficient_y
+                <= y
+                <= box[3] + self.drag_coefficient_y
             ):
                 index = len(self.points) + i
                 if self.multi_select_mode:
@@ -1424,10 +1437,10 @@ class ImageViewer(tk.Tk):
             combined_results.to_csv(csv_output_folder, index=False)
 
             logging.info(f"Analysis results saved to {csv_output_folder}")
-            print("Analysis Results:")
-            for i, result in enumerate(results):
-                print(f"Mask {i + 1}:")
-                print(result)
+            # print("Analysis Results:")
+            # for i, result in enumerate(results):
+            #     print(f"Mask {i + 1}:")
+            #     print(result)
 
 
 if __name__ == "__main__":
