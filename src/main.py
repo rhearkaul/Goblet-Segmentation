@@ -1,3 +1,10 @@
+"""The main package contains the graphic user interface code and handles
+the user inputs through the util packages form the other packages.
+
+Author: Ankang Luo 
+Co-author: Alvin Hendricks
+"""
+
 import logging
 import os
 import shutil
@@ -12,12 +19,15 @@ import pandas as pd
 from aicspylibczi import CziFile
 from PIL import Image, ImageTk
 
-from metrics import (_MEASURED_PROPS, analyze_properties, detect_outliers,
-                     get_prop)
-from sam2 import sam_main
+from metrics import _MEASURED_PROPS, analyze_properties, detect_outliers, get_prop
 from sam.sam import SAModel, SAModelType
-from watershed.watershed import (INTENSITY_THRESHOLDS, SIZE_THRESHOLDS,
-                                 STAIN_VECTORS, generate_centroid)
+from sam.util import sam_main
+from watershed.watershed import (
+    INTENSITY_THRESHOLDS,
+    SIZE_THRESHOLDS,
+    STAIN_VECTORS,
+    generate_centroid,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -70,6 +80,7 @@ class ImageViewer(tk.Tk):
         self.rect_id = None
 
         self.canvas.mask_images = []
+        self.canvas.mask_highlight_images = []
 
         self.masks = []
         self.mask_files = []
@@ -92,6 +103,8 @@ class ImageViewer(tk.Tk):
         self.minimap_drag_coefficient_y = 0
 
         self.sam = None
+
+
 
     def create_widgets(self, window_width, window_height):
 
@@ -373,7 +386,7 @@ class ImageViewer(tk.Tk):
 
         warning_label = tk.Label(
             watershed_settings_window,
-            text="Watershed are unstable, please consult manual.",
+            text="Watershed is unstable.\nPlease consult manual for more info.",
             fg="red",
         )
         warning_label.pack(pady=10)
@@ -650,6 +663,7 @@ class ImageViewer(tk.Tk):
             self.copy_image_to_folder()
 
             self.pixel_to_unit_scale = 1
+            unit_txt = "unit measurement"
 
             # Special processing for .czi files
             if image_path.endswith(".czi"):
@@ -671,12 +685,20 @@ class ImageViewer(tk.Tk):
 
                 # resolution conversion
                 if node_dist_x:
+                    scale = node_dist_x.find("Value")
+                    unit = node_dist_x.find("DefaultUnitFormat")
+
+                    # This value should be equivalent to what is observed when image loaded into FIJI
                     self.pixel_to_unit_scale = (
-                        float(node_dist_x.find("Value").text) * 1e6
+                        (float(scale.text) * 1e6)
+                        if scale is not None
+                        else self.pixel_to_unit_scale
                     )
 
+                    unit_txt = unit.text if unit is not None else unit_txt
+
                 logging.info(
-                    f"CZI loaded, pixel-to-measurement scale is set to {self.pixel_to_unit_scale}."
+                    f"CZI loaded, pixel-to-measurement scale is set to {self.pixel_to_unit_scale:.4f} {unit_txt} / pixel."
                 )
 
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -686,13 +708,14 @@ class ImageViewer(tk.Tk):
                     os.path.join(self.cache_folder, os.path.basename(image_path))
                 )
 
-                self.pixel_to_unit_scale, _ = image.info.get("resolution", (1, 1))
-                self.pixel_to_unit_scale = 1 / float(self.pixel_to_unit_scale)
+                # This is not the right "resolution".
+                # self.pixel_to_unit_scale, _ = image.info.get("resolution", (1, 1))
+                # self.pixel_to_unit_scale = 1 / float(self.pixel_to_unit_scale)
 
                 logging.info(
                     (
                         "Non-CZI file selected,"
-                        f"pixel-to-measurement scale is set to {self.pixel_to_unit_scale}."
+                        f"pixel-to-measurement scale is set to {self.pixel_to_unit_scale:.4f} / {unit_txt}."
                     )
                 )
 
@@ -903,11 +926,11 @@ class ImageViewer(tk.Tk):
                 delta_x = event.x - self.drag_start_x
                 delta_y = event.y - self.drag_start_y
                 self.canvas.move("all", delta_x, delta_y)
+                self.canvas.move("mask_highlight", delta_x, delta_y)
                 self.drag_start_x = event.x
                 self.drag_start_y = event.y
                 self.drag_coefficient_x += delta_x
                 self.drag_coefficient_y += delta_y
-                self.canvas.move("mask_highlight", delta_x, delta_y)
 
                 # Update minimap drag coefficients
                 self.minimap_drag_coefficient_x -= delta_x
@@ -1001,10 +1024,13 @@ class ImageViewer(tk.Tk):
 
     def on_annotation_select(self, event):
         selection = self.annotation_listbox.curselection()
+        self.highlight_annotations(selection)
         if self.multi_select_mode:
-            self.highlight_annotations(selection)
+            # Highlight multiple selected masks
+            mask_indices = [index - len(self.points) - len(self.boxes) for index in selection if
+                            index >= len(self.points) + len(self.boxes)]
+            self.highlight_masks(mask_indices)
         else:
-            self.highlight_annotations(selection)
             # Highlight the selected mask
             if len(selection) == 1:
                 index = selection[0]
@@ -1049,7 +1075,7 @@ class ImageViewer(tk.Tk):
         if mask_index >= 0 and mask_index < len(self.masks):
             mask = self.masks[mask_index]
             mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
-            mask_rgba[..., :3] = [255, 0, 0]  # Red color for highlight
+            mask_rgba[..., :3] = [255, 255, 0]  # Yellow color for highlight
             mask_rgba[..., 3] = (mask > 0).astype(np.uint8) * 128  # Set alpha channel based on mask
             mask_image = Image.fromarray(mask_rgba, mode="RGBA")
             mask_photo = ImageTk.PhotoImage(mask_image)
@@ -1061,6 +1087,26 @@ class ImageViewer(tk.Tk):
                 image=mask_photo,
                 tags="mask_highlight",
             )
+
+    def highlight_masks(self, mask_indices):
+        self.canvas.delete("mask_highlight")
+        self.canvas.mask_highlight_images.clear()  # Clear the list before appending new mask photos
+        for mask_index in mask_indices:
+            if mask_index >= 0 and mask_index < len(self.masks):
+                mask = self.masks[mask_index]
+                mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
+                mask_rgba[..., :3] = [255, 255, 0]  # Yellow color for highlight
+                mask_rgba[..., 3] = (mask > 0).astype(np.uint8) * 128  # Set alpha channel based on mask
+                mask_image = Image.fromarray(mask_rgba, mode="RGBA")
+                mask_photo = ImageTk.PhotoImage(mask_image)
+                self.canvas.mask_highlight_images.append(mask_photo)  # Keep a reference to the mask photo
+                self.canvas.create_image(
+                    self.drag_coefficient_x,
+                    self.drag_coefficient_y,
+                    anchor=tk.NW,
+                    image=mask_photo,
+                    tags="mask_highlight",
+                )
 
     def clear_mask_highlight(self):
         for i in range(len(self.mask_files)):
@@ -1118,16 +1164,29 @@ class ImageViewer(tk.Tk):
                 self.highlight_box(i)
                 return
 
-        # Check if a mask is clicked
+        selected_mask_indices = []
         for i, mask in enumerate(self.masks):
             if mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x] > 0:
-                self.annotation_listbox.selection_clear(0, tk.END)
-                self.annotation_listbox.selection_set(len(self.points) + len(self.boxes) + i)
-                self.highlight_mask(i)
-                return
+                if self.multi_select_mode:
+                    index = len(self.points) + len(self.boxes) + i
+                    if index in self.annotation_listbox.curselection():
+                        self.annotation_listbox.selection_clear(index)
+                    else:
+                        self.annotation_listbox.selection_set(index)
+                    selected_mask_indices = [idx - len(self.points) - len(self.boxes) for idx in
+                                             self.annotation_listbox.curselection() if
+                                             idx >= len(self.points) + len(self.boxes)]
+                else:
+                    self.annotation_listbox.selection_clear(0, tk.END)
+                    self.annotation_listbox.selection_set(len(self.points) + len(self.boxes) + i)
+                    selected_mask_indices = [i]
+                break
 
-        self.annotation_listbox.selection_clear(0, tk.END)
-        self.highlight_mask(-1)  # Clear highlight if no annotation is clicked
+        if selected_mask_indices:
+            self.highlight_masks(selected_mask_indices)
+        else:
+            self.annotation_listbox.selection_clear(0, tk.END)
+            self.highlight_mask(-1)  # Clear highlight if no annotation is clicked
 
     def delete_selected_annotation(self):
         selection = self.annotation_listbox.curselection()
@@ -1211,7 +1270,7 @@ class ImageViewer(tk.Tk):
                     else SAModelType.SAM_VIT_H
                 )
             )
-            print("model_type:", model_type)
+            logging.info(f"Attempting to load model_type: {model_type}")
             self.sam.load_weights(
                 model_type=model_type, path_to_weights=self.sam_weights_path
             )
@@ -1260,7 +1319,7 @@ class ImageViewer(tk.Tk):
                     else SAModelType.SAM_VIT_H
                 )
             )
-            print("model_type:", model_type)
+            logging.info(f"Attempting to load model_type: {model_type}")
             self.sam.load_weights(
                 model_type=model_type, path_to_weights=self.sam_weights_path
             )
@@ -1403,10 +1462,10 @@ class ImageViewer(tk.Tk):
             combined_results.to_csv(csv_output_folder, index=False)
 
             logging.info(f"Analysis results saved to {csv_output_folder}")
-            print("Analysis Results:")
-            for i, result in enumerate(results):
-                print(f"Mask {i + 1}:")
-                print(result)
+            # print("Analysis Results:")
+            # for i, result in enumerate(results):
+            #     print(f"Mask {i + 1}:")
+            #     print(result)
 
 
 if __name__ == "__main__":
