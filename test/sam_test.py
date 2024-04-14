@@ -1,4 +1,8 @@
-# These tests are to check if SAM is correctly built
+"""Pytest package to ensure that SAM can be instantiated correctly.
+
+Author: Alvin Hendricks
+"""
+
 import cv2
 import numpy as np
 import pytest

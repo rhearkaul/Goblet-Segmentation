@@ -1,3 +1,12 @@
+"""Package that generates the SAM models and interface tools for 
+prompted segmentation. 
+
+Adapted use from: https://github.com/facebookresearch/segment-anything 
+
+Author: Alvin Hendricks
+"""
+
+
 import logging
 import os
 from enum import Enum
@@ -6,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import requests
 import torch
-from segment_anything import SamPredictor, build_sam_vit_l, sam_model_registry
+from segment_anything import SamPredictor, sam_model_registry
 
 
 class SAModelType(Enum):
