@@ -17,8 +17,12 @@ from skimage.filters import threshold_otsu
 from skimage.measure import label, regionprops
 from skimage.segmentation import watershed
 
-# Staining vectors adapted from
-# https://github.com/jnkather/ColorDeconvolutionMatlab?tab=readme-ov-file
+# Deconvolution methods and vectors adapted from
+# Ruifrok et al. in 2001 (https://www.researchgate.net/publication/319879820_Quantification_of_histochemical_staining_by_color_deconvolution)
+# Jakob Nikolas Kather ColorDeconvolution Matlab(https://github.com/jnkather/ColorDeconvolutionMatlab?tab=readme-ov-file)
+# AbdulJabbar, K. et al. Geospatial immune variability illuminates differential evolution of lung adenocarcinoma. Nature Medicine (2020). doi: 10.1038/s41591-020-0900-x
+# (https://github.com/qalid7/compath/blob/master/cell_class/matlab/stain_normalisation_toolbox/PseudoColourStains.m)
+
 STAIN_VECTORS = {
     0: np.array(
         [
