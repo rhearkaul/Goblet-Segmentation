@@ -8,7 +8,7 @@ REM Install dependencies (if not already installed)
 pip install -r requirements.txt
 
 REM Run the GUI.py file and keep the window open
-start cmd /k "python src\GUI.py & pause"
+start cmd /k "python src\main.py & pause"
 
 REM Deactivate the virtual environment
 deactivate
