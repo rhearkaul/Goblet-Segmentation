@@ -907,6 +907,7 @@ class ImageViewer(tk.Tk):
                 self.drag_start_y = event.y
                 self.drag_coefficient_x += delta_x
                 self.drag_coefficient_y += delta_y
+                self.canvas.move("mask_highlight", delta_x, delta_y)
 
                 # Update minimap drag coefficients
                 self.minimap_drag_coefficient_x -= delta_x
@@ -1015,9 +1016,7 @@ class ImageViewer(tk.Tk):
                     mask_index = index - len(self.points) - len(self.boxes)
                     self.highlight_mask(mask_index)
             else:
-                self.highlight_mask(
-                    -1
-                )  # Clear highlight if multiple items are selected
+                self.highlight_mask(-1)  # Clear highlight if multiple items are selected
 
     def highlight_point(self, point_index):
         self.canvas.delete("highlight")  # Remove any existing highlight
@@ -1046,30 +1045,21 @@ class ImageViewer(tk.Tk):
             )
 
     def highlight_mask(self, mask_index):
-        self.canvas.delete("highlight")  # Remove any existing highlight
+        self.canvas.delete("mask_highlight")
         if mask_index >= 0 and mask_index < len(self.masks):
             mask = self.masks[mask_index]
-            highlight_mask = np.zeros_like(mask, dtype=np.uint8)
-            highlight_mask[mask > 0] = 255
-
-            # Create a transparent highlight overlay
-            highlight_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
-            highlight_rgba[..., :3] = [255, 255, 0]  # Yellow color
-            highlight_rgba[..., 3] = (highlight_mask > 0).astype(
-                np.uint8
-            ) * 128  # Set alpha channel based on highlight mask
-
-            highlight_image = Image.fromarray(highlight_rgba, mode="RGBA")
-            highlight_photo = ImageTk.PhotoImage(highlight_image)
-            self.canvas.highlight_image = (
-                highlight_photo  # Keep a reference to the highlight photo
-            )
+            mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
+            mask_rgba[..., :3] = [255, 0, 0]  # Red color for highlight
+            mask_rgba[..., 3] = (mask > 0).astype(np.uint8) * 128  # Set alpha channel based on mask
+            mask_image = Image.fromarray(mask_rgba, mode="RGBA")
+            mask_photo = ImageTk.PhotoImage(mask_image)
+            self.canvas.mask_highlight_image = mask_photo  # Keep a reference to the mask photo
             self.canvas.create_image(
                 self.drag_coefficient_x,
                 self.drag_coefficient_y,
                 anchor=tk.NW,
-                image=highlight_photo,
-                tags="highlight",
+                image=mask_photo,
+                tags="mask_highlight",
             )
 
     def clear_mask_highlight(self):
@@ -1110,37 +1100,34 @@ class ImageViewer(tk.Tk):
                     )
 
     def check_annotation_click(self, x, y):
-        selected_indices = []
-        for i, point in enumerate(self.points):
-            if (
-                    point[0] + self.drag_coefficient_x - 5 <= x <= point[0] + self.drag_coefficient_x + 5
-                    and point[1] + self.drag_coefficient_y - 5 <= y <= point[1] + self.drag_coefficient_y + 5
-            ):
-                if self.multi_select_mode:
-                    if i in self.annotation_listbox.curselection():
-                        self.annotation_listbox.selection_clear(i)
-                    else:
-                        self.annotation_listbox.selection_set(i)
-                else:
-                    self.annotation_listbox.selection_clear(0, tk.END)
-                    self.annotation_listbox.selection_set(i)
-                selected_indices.append(i)
-        for i, box in enumerate(self.boxes):
-            if (
-                    box[0] + self.drag_coefficient_x <= x <= box[2] + self.drag_coefficient_x
-                    and box[1] + self.drag_coefficient_y <= y <= box[3] + self.drag_coefficient_y
-            ):
-                index = len(self.points) + i
-                if self.multi_select_mode:
-                    if index in self.annotation_listbox.curselection():
-                        self.annotation_listbox.selection_clear(index)
-                    else:
-                        self.annotation_listbox.selection_set(index)
-                else:
-                    self.annotation_listbox.selection_clear(0, tk.END)
-                    self.annotation_listbox.selection_set(index)
-                selected_indices.append(index)
-        self.on_annotation_select(None)
+        # Check if a point is clicked
+        for i, point_id in enumerate(self.point_ids):
+            coords = self.canvas.coords(point_id)
+            if coords[0] <= x <= coords[2] and coords[1] <= y <= coords[3]:
+                self.annotation_listbox.selection_clear(0, tk.END)
+                self.annotation_listbox.selection_set(i)
+                self.highlight_point(i)
+                return
+
+        # Check if a box is clicked
+        for i, box_id in enumerate(self.box_ids):
+            coords = self.canvas.coords(box_id)
+            if coords[0] <= x <= coords[2] and coords[1] <= y <= coords[3]:
+                self.annotation_listbox.selection_clear(0, tk.END)
+                self.annotation_listbox.selection_set(len(self.points) + i)
+                self.highlight_box(i)
+                return
+
+        # Check if a mask is clicked
+        for i, mask in enumerate(self.masks):
+            if mask[y - self.drag_coefficient_y, x - self.drag_coefficient_x] > 0:
+                self.annotation_listbox.selection_clear(0, tk.END)
+                self.annotation_listbox.selection_set(len(self.points) + len(self.boxes) + i)
+                self.highlight_mask(i)
+                return
+
+        self.annotation_listbox.selection_clear(0, tk.END)
+        self.highlight_mask(-1)  # Clear highlight if no annotation is clicked
 
     def delete_selected_annotation(self):
         selection = self.annotation_listbox.curselection()
