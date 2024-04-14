@@ -49,7 +49,6 @@ class ImageViewer(tk.Tk):
         window_height = int(screen_height * 0.75)
 
         self.geometry(f"{window_width}x{window_height}")
-        self.resizable(True, True)  # Allow window resizing
 
         self.opened_image = None
         self.box_select_mode = False
@@ -250,7 +249,6 @@ class ImageViewer(tk.Tk):
         self.minimap_window = tk.Toplevel(self)
         self.minimap_window.title("Minimap")
         self.minimap_window.geometry(f"{minimap_width}x{minimap_height}")
-        self.minimap_window.resizable(False, False)
 
         self.minimap_canvas = tk.Canvas(
             self.minimap_window, width=minimap_width, height=minimap_height
@@ -708,6 +706,7 @@ class ImageViewer(tk.Tk):
             self.pixel_to_unit_scale = 1
             unit_txt = "unit measurement"
 
+
             # Special processing for .czi files
             if image_path.endswith(".czi"):
                 czi = CziFile(self.image_path)
@@ -771,6 +770,8 @@ class ImageViewer(tk.Tk):
             self.drag_coefficient_y = 0
             self.minimap_drag_coefficient_x = 0
             self.minimap_drag_coefficient_y = 0
+
+            self.resizable(False, False)
 
             logging.info(f"Image opened: {image_path}")
         else:
