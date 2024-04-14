@@ -34,6 +34,9 @@ logging.basicConfig(level=logging.INFO)
 
 class ImageViewer(tk.Tk):
     def __init__(self):
+        """
+        Initializes the ImageViewer class.
+        """
         super().__init__()
         self.title("Image Viewer")
         self.opened_image = None
@@ -104,9 +107,10 @@ class ImageViewer(tk.Tk):
 
         self.sam = None
 
-
-
     def create_widgets(self, window_width, window_height):
+        """
+        Creates the GUI widgets for the ImageViewer, including the toolbar, annotation list frame, and image viewer frame.
+        """
 
         toolbar_frame = tk.Frame(self, bg="gray")
         toolbar_frame.pack(side=tk.TOP, fill=tk.X)
@@ -220,6 +224,9 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
 
     def toggle_minimap(self):
+        """
+        Toggles the minimap window on and off.
+        """
         if self.opened_image:
             if not self.minimap_window or not self.minimap_window.winfo_exists():
                 self.create_minimap_window()
@@ -231,6 +238,9 @@ class ImageViewer(tk.Tk):
                 self.minimap_rect = None
 
     def create_minimap_window(self):
+        """
+        Creates the minimap window and displays a scaled-down version of the opened image with a red rectangle indicating the current view area.
+        """
         # Calculate the minimap size based on the screen resolution
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
@@ -279,6 +289,9 @@ class ImageViewer(tk.Tk):
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
 
     def update_minimap_rect(self, event):
+        """
+        Updates the position and size of the red rectangle in the minimap based on the current view area in the image canvas.
+        """
         if self.minimap_window and self.minimap_canvas and self.minimap_rect:
             minimap_width = self.minimap_canvas.winfo_width()
             minimap_height = self.minimap_canvas.winfo_height()
@@ -313,6 +326,9 @@ class ImageViewer(tk.Tk):
             )
 
     def toggle_multi_select_mode(self):
+        """
+        Toggles the multi-select mode for annotations.
+        """
         self.multi_select_mode = not self.multi_select_mode
         if self.multi_select_mode:
             self.annotation_listbox.config(selectmode=tk.EXTENDED)
@@ -326,6 +342,9 @@ class ImageViewer(tk.Tk):
             )  # Change background color when disabled
 
     def toggle_drag_mode(self):
+        """
+        Toggles the drag mode, which allows the user to drag the image.
+        """
         if self.opened_image:
             self.drag_mode = not self.drag_mode
             self.box_select_mode = False
@@ -344,9 +363,15 @@ class ImageViewer(tk.Tk):
             logging.warning("No image opened. Please open an image first.")
 
     def update_brush_size(self, value):
+        """
+        Updates the brush size for manual mask creation .
+        """
         self.brush_size = int(value)
 
     def create_menubar(self):
+        """
+        Creates the menu bar.
+        """
         menubar = tk.Menu(self)
         self.config(menu=menubar)
 
@@ -381,6 +406,9 @@ class ImageViewer(tk.Tk):
         menubar.add_cascade(label="Metrics", menu=menu5)
 
     def show_watershed_settings(self):
+        """
+        Displays a window for configuring watershed settings.
+        """
         watershed_settings_window = tk.Toplevel(self)
         watershed_settings_window.title("Watershed Settings")
 
@@ -496,6 +524,9 @@ class ImageViewer(tk.Tk):
         watershed_settings_window.mainloop()
 
     def run_sam_with_selected_annotations(self):
+        """
+        Runs the SAM (Segment Anything Model) with the selected annotations (points and boxes) to generate masks.
+        """
         selected_indices = self.annotation_listbox.curselection()
         selected_points = [
             self.points[i] for i in selected_indices if i < len(self.points)
@@ -544,6 +575,9 @@ class ImageViewer(tk.Tk):
         self.clear_points_and_boxes()
 
     def save_selected_annotations(self, selected_points, selected_boxes):
+        """
+        Saves the selected annotations (points and boxes) to a file named "selected_annotations.npz".
+        """
         if self.opened_image:
             default_filename = "selected_annotations.npz"
             points_array = np.array(selected_points)
@@ -563,6 +597,9 @@ class ImageViewer(tk.Tk):
             )
 
     def run_watershed(self):
+        """
+        Runs the watershed algorithm on the opened image to generate centroid coordinates and displays them as point annotations.
+        """
         # Create loading window
         if self.opened_image:
             self.create_loading_screen("Running Watershed.\nThis may take some time...")
@@ -615,6 +652,9 @@ class ImageViewer(tk.Tk):
             logging.warning("No image opened. Please open an image first.")
 
     def show_sam_settings(self):
+        """
+        Displays a window for configuring SAM settings.
+        """
         sam_settings_window = tk.Toplevel(self)
         sam_settings_window.title("SAM Settings")
 
@@ -653,6 +693,9 @@ class ImageViewer(tk.Tk):
         sam_settings_window.mainloop()
 
     def open_image(self):
+        """
+        Opens an image file selected by the user and displays it in the image viewer.
+        """
         image_path = filedialog.askopenfilename(
             filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.czi")]
         )
@@ -736,6 +779,9 @@ class ImageViewer(tk.Tk):
             logging.warning("No image selected.")
 
     def create_unique_image_folder(self):
+        """
+        Creates a unique folder for storing the opened image and its associated masks based on the image name and a timestamp.
+        """
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         self.image_folder = f"image_masks/{self.image_name}_{timestamp}"
         self.cache_folder = f"cache/{self.image_name}_{timestamp}"
@@ -743,9 +789,15 @@ class ImageViewer(tk.Tk):
         os.makedirs(self.cache_folder, exist_ok=True)
 
     def copy_image_to_folder(self):
+        """
+        Copies the opened image to the cache folder.
+        """
         shutil.copy2(self.image_path, self.cache_folder)
 
     def load_masks(self):
+        """
+        Loads the mask files from the image folder and displays them.
+        """
         self.masks = []
         self.mask_files = []
         all_files = [f for f in os.listdir(self.image_folder) if f.endswith(".png")]
@@ -769,6 +821,9 @@ class ImageViewer(tk.Tk):
         self.update_annotation_listbox()
 
     def create_loading_screen(self, text):
+        """
+        Creates a loading screen.
+        """
         self.loading_screen = tk.Toplevel(self)
         self.loading_screen.title("Loading")
         self.loading_screen.geometry("200x100")
@@ -778,6 +833,9 @@ class ImageViewer(tk.Tk):
         label.pack(pady=20)
 
     def load_existing_masks(self):
+        """
+        Loads existing SAM-generated masks and manual masks from the output_masks and image folder.
+        """
         self.masks_dir = f"output_masks/{self.image_name}"
         self.masks = []
         self.mask_files = []
@@ -825,6 +883,9 @@ class ImageViewer(tk.Tk):
             )
 
     def toggle_manual_mask_mode(self):
+        """
+        Toggles the manual mask mode, which allows the user to create masks by drawing on the canvas.
+        """
         if self.opened_image:
             self.manual_mask_mode = not self.manual_mask_mode
             self.box_select_mode = False
@@ -841,6 +902,9 @@ class ImageViewer(tk.Tk):
             logging.warning("No image opened. Please open an image first.")
 
     def display_masks(self):
+        """
+        Displays the loaded masks on the canvas.
+        """
         for i, mask in enumerate(self.masks):
             binary_mask = mask > 0
             mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
@@ -863,6 +927,9 @@ class ImageViewer(tk.Tk):
             )
 
     def toggle_box_select_mode(self):
+        """
+        Toggles the box select mode.
+        """
         if self.opened_image:
             self.box_select_mode = not self.box_select_mode
             self.point_select_mode = False
@@ -879,6 +946,9 @@ class ImageViewer(tk.Tk):
             logging.warning("No image opened. Please open an image first.")
 
     def toggle_point_select_mode(self):
+        """
+        Toggles the point select mode.
+        """
         if self.opened_image:
             self.point_select_mode = not self.point_select_mode
             self.box_select_mode = False
@@ -895,6 +965,9 @@ class ImageViewer(tk.Tk):
             logging.warning("No image opened. Please open an image first.")
 
     def on_canvas_click(self, event):
+        """
+        Handles the click event on the canvas based on the current mode (drag, manual mask, box select, point select).
+        """
         if self.opened_image:
             if self.drag_mode:
                 self.drag_start_x = event.x
@@ -921,6 +994,9 @@ class ImageViewer(tk.Tk):
                 self.check_annotation_click(event.x, event.y)
 
     def on_canvas_drag(self, event):
+        """
+        Handles the drag event on the canvas.
+        """
         if self.opened_image:
             if self.drag_mode:
                 delta_x = event.x - self.drag_start_x
@@ -955,6 +1031,9 @@ class ImageViewer(tk.Tk):
             )
 
     def on_canvas_release(self, event):
+        """
+        Handles the release event on the canvas.
+        """
         if self.opened_image:
             if self.drag_mode:
                 delta_x = event.x - self.drag_start_x
@@ -981,6 +1060,9 @@ class ImageViewer(tk.Tk):
                 self.update_annotation_listbox()
 
     def create_manual_mask(self):
+        """
+        Create a manual mask.
+        """
         mask = np.zeros(
             (self.opened_image.height, self.opened_image.width), dtype=np.uint8
         )
@@ -1010,6 +1092,9 @@ class ImageViewer(tk.Tk):
         self.canvas.delete("manual_mask")
 
     def update_annotation_listbox(self):
+        """
+        Updates the annotation listbox with the current points and boxes.
+        """
         self.annotation_listbox.delete(0, tk.END)
         for i, point in enumerate(self.points):
             self.annotation_listbox.insert(
@@ -1023,6 +1108,9 @@ class ImageViewer(tk.Tk):
             self.annotation_listbox.insert(tk.END, f"Mask {i + 1}: {mask_file}")
 
     def on_annotation_select(self, event):
+        """
+        Handles the selection event in the annotation list frame.
+        """
         selection = self.annotation_listbox.curselection()
         self.highlight_annotations(selection)
         if self.multi_select_mode:
@@ -1045,6 +1133,9 @@ class ImageViewer(tk.Tk):
                 self.highlight_mask(-1)  # Clear highlight if multiple items are selected
 
     def highlight_point(self, point_index):
+        """
+        Highlight a selected point.
+        """
         self.canvas.delete("highlight")  # Remove any existing highlight
         if point_index >= 0 and point_index < len(self.points):
             point = self.points[point_index]
@@ -1058,6 +1149,9 @@ class ImageViewer(tk.Tk):
             )
 
     def highlight_box(self, box_index):
+        """
+        Highlight a selected box.
+        """
         self.canvas.delete("highlight")  # Remove any existing highlight
         if box_index >= 0 and box_index < len(self.boxes):
             box = self.boxes[box_index]
@@ -1071,6 +1165,9 @@ class ImageViewer(tk.Tk):
             )
 
     def highlight_mask(self, mask_index):
+        """
+        Highlight a selected mask (one mask).
+        """
         self.canvas.delete("mask_highlight")
         if mask_index >= 0 and mask_index < len(self.masks):
             mask = self.masks[mask_index]
@@ -1089,6 +1186,9 @@ class ImageViewer(tk.Tk):
             )
 
     def highlight_masks(self, mask_indices):
+        """
+        Highlight a selected mask (mutiple masks).
+        """
         self.canvas.delete("mask_highlight")
         self.canvas.mask_highlight_images.clear()  # Clear the list before appending new mask photos
         for mask_index in mask_indices:
@@ -1109,10 +1209,16 @@ class ImageViewer(tk.Tk):
                 )
 
     def clear_mask_highlight(self):
+        """
+        Clear highlighted mask.
+        """
         for i in range(len(self.mask_files)):
             self.canvas.itemconfig(f"mask_{i}", state=tk.HIDDEN)
 
     def unselect_annotation(self):
+        """
+        Unselects the currently selected annotations.
+        """
         self.annotation_listbox.selection_clear(0, tk.END)
         self.highlight_mask(-1)  # Clear the highlight
         # Display all masks with the original blue color
@@ -1120,6 +1226,9 @@ class ImageViewer(tk.Tk):
             self.canvas.itemconfig(f"mask_{i}", state=tk.NORMAL)
 
     def highlight_annotations(self, selection):
+        """
+        Highlight given annotations.
+        """
         self.canvas.delete("highlight")
         for index in selection:
             if index < len(self.points):
@@ -1146,6 +1255,9 @@ class ImageViewer(tk.Tk):
                     )
 
     def check_annotation_click(self, x, y):
+        """
+        Highlight selected annotations by clicking on canvas.
+        """
         # Check if a point is clicked
         for i, point_id in enumerate(self.point_ids):
             coords = self.canvas.coords(point_id)
@@ -1189,6 +1301,9 @@ class ImageViewer(tk.Tk):
             self.highlight_mask(-1)  # Clear highlight if no annotation is clicked
 
     def delete_selected_annotation(self):
+        """
+        Deletes the selected annotations.
+        """
         selection = self.annotation_listbox.curselection()
         if selection:
             indices = list(selection)
@@ -1228,10 +1343,16 @@ class ImageViewer(tk.Tk):
             self.load_masks()
 
     def retag_masks_after_deletion(self, deleted_mask_index):
+        """
+        Retag mask id after deletion.
+        """
         for i in range(deleted_mask_index, len(self.masks)):
             self.canvas.itemconfig(f"mask_{i + 1}", tags=f"mask_{i}")
 
     def save_current_annotations(self):
+        """
+        Save all current annotations in GUI.
+        """
         if self.opened_image:
             default_filename = "current_annotations.npz"
             points_array = np.array(self.points)
@@ -1249,6 +1370,9 @@ class ImageViewer(tk.Tk):
             )
 
     def clear_annotations(self):
+        """
+        Clears all annotations.
+        """
         self.points = []
         self.boxes = []
         self.update_annotation_listbox()
@@ -1259,6 +1383,9 @@ class ImageViewer(tk.Tk):
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
 
     def run_sam_with_current_annotation(self):
+        """
+        Runs the SAM (Segment Anything Model) with the all current annotations (points and boxes) to generate masks.
+        """
         if self.sam is None:
             self.sam = SAModel()
             model_type = (
@@ -1307,72 +1434,10 @@ class ImageViewer(tk.Tk):
         self.load_masks()
         self.clear_points_and_boxes()
 
-    def run_sam_with_selected_annotations(self):
-        if self.sam is None:
-            self.sam = SAModel()
-            model_type = (
-                SAModelType.SAM_VIT_L
-                if self.sam_model_size == "L"
-                else (
-                    SAModelType.SAM_VIT_B
-                    if self.sam_model_size == "B"
-                    else SAModelType.SAM_VIT_H
-                )
-            )
-            logging.info(f"Attempting to load model_type: {model_type}")
-            self.sam.load_weights(
-                model_type=model_type, path_to_weights=self.sam_weights_path
-            )
-
-        selected_indices = self.annotation_listbox.curselection()
-        selected_points = [
-            self.points[i] for i in selected_indices if i < len(self.points)
-        ]
-        selected_boxes = [
-            self.boxes[i - len(self.points)]
-            for i in selected_indices
-            if i >= len(self.points) and i < len(self.points) + len(self.boxes)
-        ]
-
-        if not selected_points and not selected_boxes:
-            logging.warning(
-                "No annotations selected. Please select at least one annotation."
-            )
-            return
-
-        self.save_selected_annotations(selected_points, selected_boxes)
-        path_to_weights = self.sam_weights_path
-
-        self.create_loading_screen("Running SAM.\nThis may take some time...")
-        self.update()
-
-        output_dir = sam_main(
-            path_to_weights,
-            annotations_filename="selected_annotations.npz",
-            image_folder=self.image_folder,
-            model_size=self.sam_model_size,
-            sam=self.sam,
-        )
-        logging.info("Segmentation completed with selected annotations.")
-
-        self.loading_screen.destroy()
-
-        # Save SAM-generated masks with a timestamp
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
-        mask_files = [f for f in os.listdir(output_dir) if f.startswith("mask_")]
-        for i, mask_file in enumerate(mask_files):
-            src_path = os.path.join(output_dir, mask_file)
-            dst_path = os.path.join(self.image_folder, f"sam_mask_{timestamp}_{i}.png")
-            shutil.copy2(src_path, dst_path)
-
-        # Remove the original "mask_*.png" files
-        for mask_file in mask_files:
-            os.remove(os.path.join(output_dir, mask_file))
-
-        self.load_masks()
-        self.clear_points_and_boxes()
-
     def clear_points_and_boxes(self):
+        """
+        Clears all points and boxes.
+        """
         for point_id in self.point_ids:
             self.canvas.delete(point_id)
         for box_id in self.box_ids:
@@ -1383,55 +1448,10 @@ class ImageViewer(tk.Tk):
         self.box_ids = []
         self.update_annotation_listbox()
 
-    def display_image_with_masks(self, masks_dir):
-        image_path = os.path.join(masks_dir, "predicted_image.png")
-        image, masks, mask_files = self.load_image_with_masks(image_path, masks_dir)
-
-        # Save the predicted_image.png to the cache folder
-        shutil.copy2(image_path, os.path.join(self.cache_folder, "predicted_image.png"))
-
-        self.opened_image = Image.fromarray(image)
-        photo = ImageTk.PhotoImage(self.opened_image)
-        self.canvas.delete("all")
-        self.canvas.image = photo
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
-
-        for i, mask in enumerate(masks):
-            mask_rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.uint8)
-            mask_rgba[..., :3] = [30, 144, 255]  # Blue color
-            mask_rgba[..., 3] = (mask > 0).astype(
-                np.uint8
-            ) * 128  # Set alpha channel based on mask
-
-            mask_image = Image.fromarray(mask_rgba, mode="RGBA")
-            mask_photo = ImageTk.PhotoImage(mask_image)
-            self.canvas.mask_images.append(
-                mask_photo
-            )  # Keep a reference to the mask photo
-            self.canvas.create_image(
-                0, 0, anchor=tk.NW, image=mask_photo, tags=f"mask_{i}"
-            )
-
-        self.masks = masks
-        self.mask_files = mask_files
-        self.masks_dir = masks_dir
-        self.update_annotation_listbox()
-
-    def load_image_with_masks(self, image_path, masks_dir):
-        image = cv2.imread(
-            os.path.join(self.cache_folder, os.path.basename(image_path))
-        )
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        mask_files = [
-            mask for mask in os.listdir(masks_dir) if mask.startswith("mask_")
-        ]
-        masks = [
-            cv2.imread(os.path.join(masks_dir, mask_file), 0)
-            for mask_file in mask_files
-        ]
-        return image, masks, mask_files
-
     def run_analysis(self):
+        """
+        Runs the analysis on the generated masks and save results.
+        """
         if not self.masks:
             logging.warning("No masks found. Please run SAM first.")
             return
@@ -1462,10 +1482,6 @@ class ImageViewer(tk.Tk):
             combined_results.to_csv(csv_output_folder, index=False)
 
             logging.info(f"Analysis results saved to {csv_output_folder}")
-            # print("Analysis Results:")
-            # for i, result in enumerate(results):
-            #     print(f"Mask {i + 1}:")
-            #     print(result)
 
 
 if __name__ == "__main__":
